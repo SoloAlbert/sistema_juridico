@@ -15,6 +15,7 @@ const listarBloquesHtmlAdmin = async (req, res) => {
         created_at,
         updated_at
       FROM plantilla_bloques_html
+      WHERE deleted_at IS NULL
       ORDER BY id_bloque DESC`
     );
 
@@ -48,6 +49,7 @@ const obtenerBloqueHtmlAdminPorId = async (req, res) => {
         updated_at
       FROM plantilla_bloques_html
       WHERE id_bloque = ?
+        AND deleted_at IS NULL
       LIMIT 1`,
       [id]
     );

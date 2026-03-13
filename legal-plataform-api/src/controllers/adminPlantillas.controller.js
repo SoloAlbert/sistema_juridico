@@ -50,6 +50,7 @@ const listarPlantillasAdmin = async (req, res) => {
       FROM plantillas_legales p
       INNER JOIN categorias_plantilla cp ON cp.id_categoria_plantilla = p.id_categoria_plantilla
       INNER JOIN especialidades e ON e.id_especialidad = p.id_especialidad
+      WHERE p.deleted_at IS NULL
       ORDER BY p.id_plantilla DESC`
     );
 
@@ -75,6 +76,7 @@ const obtenerPlantillaAdminPorId = async (req, res) => {
         p.*
       FROM plantillas_legales p
       WHERE p.id_plantilla = ?
+        AND p.deleted_at IS NULL
       LIMIT 1`,
       [id]
     );

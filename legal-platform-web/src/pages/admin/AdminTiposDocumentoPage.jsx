@@ -127,6 +127,24 @@ export default function AdminTiposDocumentoPage() {
                   size="small"
                   onClick={() => navigate(`/admin/tipos-documento/${row.id_tipo_documento}/sugerencia`)}
                 />
+                <Button
+                  label="Papelera"
+                  icon="pi pi-trash"
+                  size="small"
+                  severity="danger"
+                  outlined
+                  onClick={async () => {
+                    try {
+                      setError('');
+                      setSuccess('');
+                      const { data } = await api.post(`/admin/papelera/tipos_documento/${row.id_tipo_documento}/enviar`);
+                      setSuccess(data.message || 'Enviado a papelera');
+                      await cargar();
+                    } catch (err) {
+                      setError(err.response?.data?.message || 'Error al enviar a papelera');
+                    }
+                  }}
+                />
               </div>
             )}
           />

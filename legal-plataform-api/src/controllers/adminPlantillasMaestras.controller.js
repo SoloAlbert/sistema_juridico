@@ -15,6 +15,7 @@ const listarPlantillasMaestrasAdmin = async (req, res) => {
         created_at,
         updated_at
       FROM plantilla_maestra_html
+      WHERE deleted_at IS NULL
       ORDER BY id_plantilla_maestra DESC`
     );
 
@@ -48,6 +49,7 @@ const obtenerPlantillaMaestraAdminPorId = async (req, res) => {
         updated_at
       FROM plantilla_maestra_html
       WHERE id_plantilla_maestra = ?
+        AND deleted_at IS NULL
       LIMIT 1`,
       [id]
     );

@@ -113,6 +113,24 @@ export default function AdminBloquesHtmlPage() {
           }
         }}
       />
+      <Button
+        label="Papelera"
+        icon="pi pi-trash"
+        size="small"
+        severity="danger"
+        outlined
+        onClick={async () => {
+          try {
+            setError('');
+            setSuccess('');
+            const { data } = await api.post(`/admin/papelera/bloques/${row.id_bloque}/enviar`);
+            setSuccess(data.message || 'Enviado a papelera');
+            await cargarBloques();
+          } catch (err) {
+            setError(err.response?.data?.message || 'Error al enviar a papelera');
+          }
+        }}
+      />
     </div>
   );
 

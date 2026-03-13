@@ -34,6 +34,11 @@ export default function AdminMenu() {
       label: 'Bitácora',
       icon: 'pi pi-history',
       command: () => navigate('/admin/bitacora')
+   },
+   {
+      label: 'Papelera',
+      icon: 'pi pi-trash',
+      command: () => navigate('/admin/papelera')
    }
   ];
 

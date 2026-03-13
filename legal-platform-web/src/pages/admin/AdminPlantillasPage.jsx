@@ -160,6 +160,24 @@ export default function AdminPlantillasPage() {
           }
         }}
       />
+      <Button
+        label="Papelera"
+        icon="pi pi-trash"
+        size="small"
+        severity="danger"
+        outlined
+        onClick={async () => {
+          try {
+            setError('');
+            setSuccess('');
+            const { data } = await api.post(`/admin/papelera/plantillas/${row.id_plantilla}/enviar`);
+            setSuccess(data.message || 'Enviado a papelera');
+            await cargarTodo();
+          } catch (err) {
+            setError(err.response?.data?.message || 'Error al enviar a papelera');
+          }
+        }}
+      />
     </div>
   );
 

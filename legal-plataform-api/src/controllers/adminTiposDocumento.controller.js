@@ -16,6 +16,7 @@ const listarTiposDocumentoAdmin = async (req, res) => {
       FROM tipos_documento td
       LEFT JOIN tipos_documento_sugerencias s
         ON s.id_tipo_documento = td.id_tipo_documento
+      WHERE td.deleted_at IS NULL
       ORDER BY td.nombre ASC`
     );
 
@@ -45,6 +46,7 @@ const obtenerTipoDocumentoAdminPorId = async (req, res) => {
         activo
       FROM tipos_documento
       WHERE id_tipo_documento = ?
+        AND deleted_at IS NULL
       LIMIT 1`,
       [id]
     );
