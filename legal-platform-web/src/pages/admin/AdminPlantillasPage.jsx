@@ -41,7 +41,8 @@ export default function AdminPlantillasPage() {
     version_actual: '1.0',
     tipo_archivo_salida: 'pdf',
     requiere_revision_manual: false,
-    activo: true
+    activo: true,
+    estatus_publicacion: 'borrador'
   });
 
   useEffect(() => {
@@ -110,7 +111,8 @@ export default function AdminPlantillasPage() {
         version_actual: '1.0',
         tipo_archivo_salida: 'pdf',
         requiere_revision_manual: false,
-        activo: true
+        activo: true,
+        estatus_publicacion: 'borrador'
       });
 
       await cargarTodo();
@@ -124,6 +126,14 @@ export default function AdminPlantillasPage() {
   const activoBody = (row) => (
     <Tag value={row.activo ? 'Activa' : 'Inactiva'} severity={row.activo ? 'success' : 'danger'} />
   );
+
+  const estatusBody = (row) => {
+    let severity = 'warning';
+    if (row.estatus_publicacion === 'publicada') severity = 'success';
+    if (row.estatus_publicacion === 'archivada') severity = 'secondary';
+
+    return <Tag value={row.estatus_publicacion} severity={severity} />;
+  };
 
   const accionesBody = (row) => (
     <div className="flex gap-2 flex-wrap">
@@ -171,6 +181,7 @@ export default function AdminPlantillasPage() {
           <Column field="categoria" header="Categoría" />
           <Column field="especialidad" header="Especialidad" />
           <Column field="precio" header="Precio" />
+          <Column header="Publicación" body={estatusBody} />
           <Column field="version_actual" header="Versión actual" />
           <Column header="Activa" body={activoBody} />
           <Column header="Acciones" body={accionesBody} />
@@ -267,6 +278,20 @@ export default function AdminPlantillasPage() {
             <InputText
               value={form.version_actual}
               onChange={(e) => handleChange('version_actual', e.target.value)}
+              className="w-full"
+            />
+          </div>
+
+          <div className="col-12 md:col-6">
+            <label className="block mb-2">Estatus publicación</label>
+            <Dropdown
+              value={form.estatus_publicacion}
+              options={[
+                { label: 'Borrador', value: 'borrador' },
+                { label: 'Publicada', value: 'publicada' },
+                { label: 'Archivada', value: 'archivada' }
+              ]}
+              onChange={(e) => handleChange('estatus_publicacion', e.value)}
               className="w-full"
             />
           </div>

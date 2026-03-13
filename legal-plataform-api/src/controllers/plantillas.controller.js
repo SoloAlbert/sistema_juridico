@@ -157,6 +157,7 @@ const listarPlantillas = async (req, res) => {
       INNER JOIN categorias_plantilla cp ON cp.id_categoria_plantilla = p.id_categoria_plantilla
       INNER JOIN especialidades e ON e.id_especialidad = p.id_especialidad
       WHERE p.activo = 1
+        AND p.estatus_publicacion = 'publicada'
     `;
 
     const params = [];
@@ -213,6 +214,8 @@ const obtenerPlantillaPorId = async (req, res) => {
       INNER JOIN categorias_plantilla cp ON cp.id_categoria_plantilla = p.id_categoria_plantilla
       INNER JOIN especialidades e ON e.id_especialidad = p.id_especialidad
       WHERE p.id_plantilla = ?
+        AND p.activo = 1
+        AND p.estatus_publicacion = 'publicada'
       LIMIT 1`,
       [id]
     );

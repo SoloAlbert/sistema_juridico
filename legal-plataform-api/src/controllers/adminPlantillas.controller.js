@@ -43,6 +43,7 @@ const listarPlantillasAdmin = async (req, res) => {
         p.tipo_archivo_salida,
         p.requiere_revision_manual,
         p.activo,
+        p.estatus_publicacion,
         cp.nombre AS categoria,
         e.nombre AS especialidad
       FROM plantillas_legales p
@@ -154,7 +155,8 @@ const crearPlantillaAdmin = async (req, res) => {
   version_actual,
   tipo_archivo_salida,
   requiere_revision_manual,
-  activo
+  activo,
+  estatus_publicacion
 } = req.body;
 
     if (!id_categoria_plantilla || !id_especialidad || !titulo || !slug) {
@@ -191,9 +193,10 @@ const crearPlantillaAdmin = async (req, res) => {
     version_actual,
     tipo_archivo_salida,
     requiere_revision_manual,
-    activo
+    activo,
+    estatus_publicacion
   )
-  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
   [
     id_categoria_plantilla,
     id_especialidad,
@@ -207,7 +210,8 @@ const crearPlantillaAdmin = async (req, res) => {
     version_actual || '1.0',
     tipo_archivo_salida || 'pdf',
     requiere_revision_manual ? 1 : 0,
-    activo ? 1 : 0
+    activo ? 1 : 0,
+    estatus_publicacion || 'borrador'
   ]
 );
 
@@ -243,7 +247,8 @@ const actualizarPlantillaAdmin = async (req, res) => {
   version_actual,
   tipo_archivo_salida,
   requiere_revision_manual,
-  activo
+  activo,
+  estatus_publicacion
 } = req.body;
 
     await pool.query(
@@ -262,6 +267,7 @@ const actualizarPlantillaAdmin = async (req, res) => {
      tipo_archivo_salida = ?,
      requiere_revision_manual = ?,
      activo = ?,
+     estatus_publicacion = ?,
      updated_at = CURRENT_TIMESTAMP
    WHERE id_plantilla = ?`,
   [
@@ -278,6 +284,7 @@ const actualizarPlantillaAdmin = async (req, res) => {
     tipo_archivo_salida || 'pdf',
     requiere_revision_manual ? 1 : 0,
     activo ? 1 : 0,
+    estatus_publicacion || 'borrador',
     id
   ]
 );

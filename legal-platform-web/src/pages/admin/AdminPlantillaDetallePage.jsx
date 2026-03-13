@@ -147,7 +147,8 @@ setPlantillasMaestras((maestrasRes.data.data || []).filter((item) => item.activo
         version_actual: data.version_actual || '1.0',
         tipo_archivo_salida: data.tipo_archivo_salida || 'pdf',
         requiere_revision_manual: !!data.requiere_revision_manual,
-        activo: !!data.activo
+        activo: !!data.activo,
+        estatus_publicacion: data.estatus_publicacion || 'borrador'
       });
 
       setVariables(
@@ -588,6 +589,20 @@ const actualizarBloqueEstructura = (index, field, value) => {
                   <InputText
                     value={formPlantilla.version_actual}
                     onChange={(e) => setFormValue('version_actual', e.target.value)}
+                    className="w-full"
+                  />
+                </div>
+
+                <div className="col-12 md:col-6">
+                  <label className="block mb-2">Estatus publicación</label>
+                  <Dropdown
+                    value={formPlantilla.estatus_publicacion}
+                    options={[
+                      { label: 'Borrador', value: 'borrador' },
+                      { label: 'Publicada', value: 'publicada' },
+                      { label: 'Archivada', value: 'archivada' }
+                    ]}
+                    onChange={(e) => setFormValue('estatus_publicacion', e.value)}
                     className="w-full"
                   />
                 </div>
