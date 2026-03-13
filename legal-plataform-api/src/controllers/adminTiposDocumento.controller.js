@@ -31,6 +31,156 @@ const listarTiposDocumentoAdmin = async (req, res) => {
   }
 };
 
+const obtenerTipoDocumentoAdminPorId = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await pool.query(
+      `SELECT
+        id_tipo_documento,
+        nombre,
+        slug,
+        descripcion,
+        activo
+      FROM tipos_documento
+      WHERE id_tipo_documento = ?
+      LIMIT 1`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Tipo de documento no encontrado'
+      });
+    }
+
+    return res.json({
+      ok: true,
+      data: rows[0]
+    });
+  } catch (error) {
+    console.error('Error en obtenerTipoDocumentoAdminPorId:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al obtener tipo de documento'
+    });
+  }
+};
+
+const crearTipoDocumentoAdmin = async (req, res) => {
+  try {
+    const { nombre, slug, descripcion, activo } = req.body;
+
+    if (!nombre || !slug) {
+      return res.status(400).json({
+        ok: false,
+        message: 'nombre y slug son obligatorios'
+      });
+    }
+
+    const [existente] = await pool.query(
+      `SELECT id_tipo_documento
+       FROM tipos_documento
+       WHERE slug = ?
+       LIMIT 1`,
+      [slug]
+    );
+
+    if (existente.length > 0) {
+      return res.status(409).json({
+        ok: false,
+        message: 'Ya existe un tipo de documento con ese slug'
+      });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO tipos_documento
+      (nombre, slug, descripcion, activo)
+      VALUES (?, ?, ?, ?)`,
+      [
+        nombre,
+        slug,
+        descripcion || null,
+        activo ? 1 : 0
+      ]
+    );
+
+    return res.status(201).json({
+      ok: true,
+      message: 'Tipo de documento creado correctamente',
+      data: {
+        id_tipo_documento: result.insertId
+      }
+    });
+  } catch (error) {
+    console.error('Error en crearTipoDocumentoAdmin:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al crear tipo de documento'
+    });
+  }
+};
+
+const actualizarTipoDocumentoAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { nombre, slug, descripcion, activo } = req.body;
+
+    if (!nombre || !slug) {
+      return res.status(400).json({
+        ok: false,
+        message: 'nombre y slug son obligatorios'
+      });
+    }
+
+    const [duplicado] = await pool.query(
+      `SELECT id_tipo_documento
+       FROM tipos_documento
+       WHERE slug = ?
+         AND id_tipo_documento <> ?
+       LIMIT 1`,
+      [slug, id]
+    );
+
+    if (duplicado.length > 0) {
+      return res.status(409).json({
+        ok: false,
+        message: 'Ya existe otro tipo de documento con ese slug'
+      });
+    }
+
+    await pool.query(
+      `UPDATE tipos_documento
+       SET
+         nombre = ?,
+         slug = ?,
+         descripcion = ?,
+         activo = ?,
+         updated_at = CURRENT_TIMESTAMP
+       WHERE id_tipo_documento = ?`,
+      [
+        nombre,
+        slug,
+        descripcion || null,
+        activo ? 1 : 0,
+        id
+      ]
+    );
+
+    return res.json({
+      ok: true,
+      message: 'Tipo de documento actualizado correctamente'
+    });
+  } catch (error) {
+    console.error('Error en actualizarTipoDocumentoAdmin:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al actualizar tipo de documento'
+    });
+  }
+};
+
 const obtenerSugerenciaPorTipoAdmin = async (req, res) => {
   try {
     const { id } = req.params;
@@ -200,6 +350,9 @@ const guardarSugerenciaPorTipoAdmin = async (req, res) => {
 
 module.exports = {
   listarTiposDocumentoAdmin,
+  obtenerTipoDocumentoAdminPorId,
+  crearTipoDocumentoAdmin,
+  actualizarTipoDocumentoAdmin,
   obtenerSugerenciaPorTipoAdmin,
   guardarSugerenciaPorTipoAdmin
 };
