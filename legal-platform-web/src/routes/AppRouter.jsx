@@ -43,6 +43,9 @@ import AdminBloqueHtmlDetallePage from '../pages/admin/AdminBloqueHtmlDetallePag
 import AdminPlantillasMaestrasPage from '../pages/admin/AdminPlantillasMaestrasPage';
 import AdminPlantillaMaestraDetallePage from '../pages/admin/AdminPlantillaMaestraDetallePage';
 
+import AdminTiposDocumentoPage from '../pages/admin/AdminTiposDocumentoPage';
+import AdminTipoDocumentoSugerenciaPage from '../pages/admin/AdminTipoDocumentoSugerenciaPage';
+
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -334,6 +337,24 @@ export default function AppRouter() {
   element={
     <ProtectedRoute role="admin">
       <AdminPlantillaMaestraDetallePage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/tipos-documento"
+  element={
+    <ProtectedRoute role="admin">
+      <AdminTiposDocumentoPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/tipos-documento/:id/sugerencia"
+  element={
+    <ProtectedRoute role="admin">
+      <AdminTipoDocumentoSugerenciaPage />
     </ProtectedRoute>
   }
 />

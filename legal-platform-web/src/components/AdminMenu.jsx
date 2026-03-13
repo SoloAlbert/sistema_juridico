@@ -24,6 +24,11 @@ export default function AdminMenu() {
       label: 'Plantillas maestras',
       icon: 'pi pi-clone',
       command: () => navigate('/admin/plantillas-maestras')
+    },
+    {
+      label: 'Tipos de documento',
+      icon: 'pi pi-sitemap',
+      command: () => navigate('/admin/tipos-documento')
     }
   ];
 
