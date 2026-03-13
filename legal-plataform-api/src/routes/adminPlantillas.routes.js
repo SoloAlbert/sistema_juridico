@@ -9,7 +9,8 @@ const {
   actualizarPlantillaAdmin,
   guardarVariablesPlantillaAdmin,
   crearVersionPlantillaAdmin,
-  subirArchivoBaseVersionAdmin
+  subirArchivoBaseVersionAdmin,
+  clonarPlantillaAdmin
 } = require('../controllers/adminPlantillas.controller');
 
 const { validarJWT, soloAdmin } = require('../middlewares/auth.middleware');
@@ -22,6 +23,7 @@ router.get('/', listarPlantillasAdmin);
 router.get('/:id', obtenerPlantillaAdminPorId);
 router.post('/', crearPlantillaAdmin);
 router.put('/:id', actualizarPlantillaAdmin);
+router.post('/:id/clonar', clonarPlantillaAdmin);
 router.post('/:id/variables', guardarVariablesPlantillaAdmin);
 router.post('/:id/versiones', crearVersionPlantillaAdmin);
 

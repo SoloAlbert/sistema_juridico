@@ -111,12 +111,31 @@ export default function AdminPlantillasMaestrasPage() {
           <Column
             header="Acciones"
             body={(row) => (
-              <Button
-                label="Editar"
-                icon="pi pi-pencil"
-                size="small"
-                onClick={() => navigate(`/admin/plantillas-maestras/${row.id_plantilla_maestra}`)}
-              />
+              <div className="flex gap-2 flex-wrap">
+                <Button
+                  label="Editar"
+                  icon="pi pi-pencil"
+                  size="small"
+                  onClick={() => navigate(`/admin/plantillas-maestras/${row.id_plantilla_maestra}`)}
+                />
+                <Button
+                  label="Clonar"
+                  icon="pi pi-copy"
+                  size="small"
+                  outlined
+                  onClick={async () => {
+                    try {
+                      setError('');
+                      setSuccess('');
+                      const { data } = await api.post(`/admin/plantillas-maestras/${row.id_plantilla_maestra}/clonar`);
+                      setSuccess(data.message || 'Plantilla maestra clonada');
+                      await cargar();
+                    } catch (err) {
+                      setError(err.response?.data?.message || 'Error al clonar plantilla maestra');
+                    }
+                  }}
+                />
+              </div>
             )}
           />
         </DataTable>

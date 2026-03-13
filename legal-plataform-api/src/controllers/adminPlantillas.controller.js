@@ -499,6 +499,179 @@ const subirArchivoBaseVersionAdmin = async (req, res) => {
   }
 };
 
+const clonarPlantillaAdmin = async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const { id } = req.params;
+
+    await connection.beginTransaction();
+
+    const [plantillas] = await connection.query(
+      `SELECT *
+       FROM plantillas_legales
+       WHERE id_plantilla = ?
+       LIMIT 1`,
+      [id]
+    );
+
+    if (plantillas.length === 0) {
+      await connection.rollback();
+      return res.status(404).json({
+        ok: false,
+        message: 'Plantilla no encontrada'
+      });
+    }
+
+    const original = plantillas[0];
+    const nuevoSlug = `${original.slug}-copia-${Date.now()}`;
+
+    const [insertPlantilla] = await connection.query(
+      `INSERT INTO plantillas_legales
+      (
+        id_categoria_plantilla,
+        id_especialidad,
+        id_tipo_documento,
+        titulo,
+        slug,
+        descripcion_corta,
+        descripcion_larga,
+        precio,
+        moneda,
+        version_actual,
+        tipo_archivo_salida,
+        requiere_revision_manual,
+        activo
+      )
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
+        original.id_categoria_plantilla,
+        original.id_especialidad,
+        original.id_tipo_documento,
+        `${original.titulo} (Copia)`,
+        nuevoSlug,
+        original.descripcion_corta,
+        original.descripcion_larga,
+        original.precio,
+        original.moneda,
+        original.version_actual,
+        original.tipo_archivo_salida,
+        original.requiere_revision_manual,
+        original.activo
+      ]
+    );
+
+    const nuevoIdPlantilla = insertPlantilla.insertId;
+
+    const [variables] = await connection.query(
+      `SELECT
+        nombre_variable,
+        label_campo,
+        tipo_campo,
+        placeholder,
+        ayuda,
+        requerido,
+        orden,
+        configuracion_json
+      FROM plantilla_variables
+      WHERE id_plantilla = ?`,
+      [id]
+    );
+
+    for (const item of variables) {
+      await connection.query(
+        `INSERT INTO plantilla_variables
+        (
+          id_plantilla,
+          nombre_variable,
+          label_campo,
+          tipo_campo,
+          placeholder,
+          ayuda,
+          requerido,
+          orden,
+          configuracion_json
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          nuevoIdPlantilla,
+          item.nombre_variable,
+          item.label_campo,
+          item.tipo_campo,
+          item.placeholder,
+          item.ayuda,
+          item.requerido,
+          item.orden,
+          item.configuracion_json
+        ]
+      );
+    }
+
+    const [versiones] = await connection.query(
+      `SELECT
+        numero_version,
+        contenido_base,
+        ruta_archivo_base,
+        html_preview_base,
+        estructura_bloques_json,
+        notas_cambios,
+        es_actual,
+        creado_por
+      FROM plantilla_versiones
+      WHERE id_plantilla = ?`,
+      [id]
+    );
+
+    for (const version of versiones) {
+      await connection.query(
+        `INSERT INTO plantilla_versiones
+        (
+          id_plantilla,
+          numero_version,
+          contenido_base,
+          ruta_archivo_base,
+          html_preview_base,
+          estructura_bloques_json,
+          notas_cambios,
+          es_actual,
+          creado_por
+        )
+        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [
+          nuevoIdPlantilla,
+          version.numero_version,
+          version.contenido_base,
+          version.ruta_archivo_base,
+          version.html_preview_base,
+          version.estructura_bloques_json,
+          version.notas_cambios,
+          version.es_actual,
+          version.creado_por
+        ]
+      );
+    }
+
+    await connection.commit();
+
+    return res.status(201).json({
+      ok: true,
+      message: 'Plantilla clonada correctamente',
+      data: {
+        id_plantilla: nuevoIdPlantilla
+      }
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error en clonarPlantillaAdmin:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al clonar plantilla'
+    });
+  } finally {
+    connection.release();
+  }
+};
+
 module.exports = {
   listarCatalogosPlantillas,
   listarPlantillasAdmin,
@@ -507,5 +680,6 @@ module.exports = {
   actualizarPlantillaAdmin,
   guardarVariablesPlantillaAdmin,
   crearVersionPlantillaAdmin,
-  subirArchivoBaseVersionAdmin
+  subirArchivoBaseVersionAdmin,
+  clonarPlantillaAdmin
 };

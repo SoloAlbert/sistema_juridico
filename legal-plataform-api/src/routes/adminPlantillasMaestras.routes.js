@@ -5,7 +5,8 @@ const {
   listarPlantillasMaestrasAdmin,
   obtenerPlantillaMaestraAdminPorId,
   crearPlantillaMaestraAdmin,
-  actualizarPlantillaMaestraAdmin
+  actualizarPlantillaMaestraAdmin,
+  clonarPlantillaMaestraAdmin
 } = require('../controllers/adminPlantillasMaestras.controller');
 
 const { validarJWT, soloAdmin } = require('../middlewares/auth.middleware');
@@ -16,5 +17,6 @@ router.get('/', listarPlantillasMaestrasAdmin);
 router.get('/:id', obtenerPlantillaMaestraAdminPorId);
 router.post('/', crearPlantillaMaestraAdmin);
 router.put('/:id', actualizarPlantillaMaestraAdmin);
+router.post('/:id/clonar', clonarPlantillaMaestraAdmin);
 
 module.exports = router;

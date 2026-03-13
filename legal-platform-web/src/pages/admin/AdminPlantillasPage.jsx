@@ -126,12 +126,31 @@ export default function AdminPlantillasPage() {
   );
 
   const accionesBody = (row) => (
-    <Button
-      label="Editar"
-      icon="pi pi-pencil"
-      size="small"
-      onClick={() => navigate(`/admin/plantillas/${row.id_plantilla}`)}
-    />
+    <div className="flex gap-2 flex-wrap">
+      <Button
+        label="Editar"
+        icon="pi pi-pencil"
+        size="small"
+        onClick={() => navigate(`/admin/plantillas/${row.id_plantilla}`)}
+      />
+      <Button
+        label="Clonar"
+        icon="pi pi-copy"
+        size="small"
+        outlined
+        onClick={async () => {
+          try {
+            setError('');
+            setSuccess('');
+            const { data } = await api.post(`/admin/plantillas/${row.id_plantilla}/clonar`);
+            setSuccess(data.message || 'Plantilla clonada');
+            await cargarTodo();
+          } catch (err) {
+            setError(err.response?.data?.message || 'Error al clonar plantilla');
+          }
+        }}
+      />
+    </div>
   );
 
   return (

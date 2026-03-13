@@ -89,12 +89,31 @@ export default function AdminBloquesHtmlPage() {
   );
 
   const accionesBody = (row) => (
-    <Button
-      label="Editar"
-      icon="pi pi-pencil"
-      size="small"
-      onClick={() => navigate(`/admin/bloques-html/${row.id_bloque}`)}
-    />
+    <div className="flex gap-2 flex-wrap">
+      <Button
+        label="Editar"
+        icon="pi pi-pencil"
+        size="small"
+        onClick={() => navigate(`/admin/bloques-html/${row.id_bloque}`)}
+      />
+      <Button
+        label="Clonar"
+        icon="pi pi-copy"
+        size="small"
+        outlined
+        onClick={async () => {
+          try {
+            setError('');
+            setSuccess('');
+            const { data } = await api.post(`/admin/bloques-html/${row.id_bloque}/clonar`);
+            setSuccess(data.message || 'Bloque clonado');
+            await cargarBloques();
+          } catch (err) {
+            setError(err.response?.data?.message || 'Error al clonar bloque');
+          }
+        }}
+      />
+    </div>
   );
 
   return (

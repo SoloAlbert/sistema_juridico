@@ -178,9 +178,68 @@ const actualizarPlantillaMaestraAdmin = async (req, res) => {
   }
 };
 
+const clonarPlantillaMaestraAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await pool.query(
+      `SELECT
+        nombre,
+        slug,
+        descripcion,
+        categoria,
+        estructura_bloques_json,
+        activo
+      FROM plantilla_maestra_html
+      WHERE id_plantilla_maestra = ?
+      LIMIT 1`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Plantilla maestra no encontrada'
+      });
+    }
+
+    const original = rows[0];
+    const nuevoSlug = `${original.slug}-copia-${Date.now()}`;
+
+    const [result] = await pool.query(
+      `INSERT INTO plantilla_maestra_html
+      (nombre, slug, descripcion, categoria, estructura_bloques_json, activo)
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        `${original.nombre} (Copia)`,
+        nuevoSlug,
+        original.descripcion,
+        original.categoria,
+        original.estructura_bloques_json,
+        original.activo
+      ]
+    );
+
+    return res.status(201).json({
+      ok: true,
+      message: 'Plantilla maestra clonada correctamente',
+      data: {
+        id_plantilla_maestra: result.insertId
+      }
+    });
+  } catch (error) {
+    console.error('Error en clonarPlantillaMaestraAdmin:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al clonar plantilla maestra'
+    });
+  }
+};
+
 module.exports = {
   listarPlantillasMaestrasAdmin,
   obtenerPlantillaMaestraAdminPorId,
   crearPlantillaMaestraAdmin,
-  actualizarPlantillaMaestraAdmin
+  actualizarPlantillaMaestraAdmin,
+  clonarPlantillaMaestraAdmin
 };

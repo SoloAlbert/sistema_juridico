@@ -164,9 +164,68 @@ const actualizarBloqueHtmlAdmin = async (req, res) => {
   }
 };
 
+const clonarBloqueHtmlAdmin = async (req, res) => {
+  try {
+    const { id } = req.params;
+
+    const [rows] = await pool.query(
+      `SELECT
+        nombre,
+        slug,
+        descripcion,
+        categoria,
+        html_base,
+        activo
+      FROM plantilla_bloques_html
+      WHERE id_bloque = ?
+      LIMIT 1`,
+      [id]
+    );
+
+    if (rows.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Bloque no encontrado'
+      });
+    }
+
+    const original = rows[0];
+    const nuevoSlug = `${original.slug}-copia-${Date.now()}`;
+
+    const [result] = await pool.query(
+      `INSERT INTO plantilla_bloques_html
+      (nombre, slug, descripcion, categoria, html_base, activo)
+      VALUES (?, ?, ?, ?, ?, ?)`,
+      [
+        `${original.nombre} (Copia)`,
+        nuevoSlug,
+        original.descripcion,
+        original.categoria,
+        original.html_base,
+        original.activo
+      ]
+    );
+
+    return res.status(201).json({
+      ok: true,
+      message: 'Bloque clonado correctamente',
+      data: {
+        id_bloque: result.insertId
+      }
+    });
+  } catch (error) {
+    console.error('Error en clonarBloqueHtmlAdmin:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al clonar bloque HTML'
+    });
+  }
+};
+
 module.exports = {
   listarBloquesHtmlAdmin,
   obtenerBloqueHtmlAdminPorId,
   crearBloqueHtmlAdmin,
-  actualizarBloqueHtmlAdmin
+  actualizarBloqueHtmlAdmin,
+  clonarBloqueHtmlAdmin
 };
