@@ -19,6 +19,7 @@ const adminPlantillasMaestrasRoutes = require('./routes/adminPlantillasMaestras.
 const adminTiposDocumentoRoutes = require('./routes/adminTiposDocumento.routes');
 const adminBitacoraRoutes = require('./routes/adminBitacora.routes');
 const adminPapeleraRoutes = require('./routes/adminPapelera.routes');
+const adminDashboardRoutes = require('./routes/adminDashboard.routes');
 
 const app = express();
 
@@ -58,6 +59,7 @@ app.use('/api/admin/plantillas-maestras', adminPlantillasMaestrasRoutes);
 app.use('/api/admin/tipos-documento', adminTiposDocumentoRoutes);
 app.use('/api/admin/bitacora', adminBitacoraRoutes);
 app.use('/api/admin/papelera', adminPapeleraRoutes);
+app.use('/api/admin/dashboard', adminDashboardRoutes);
 
 const PORT = process.env.PORT || 3003;
 
