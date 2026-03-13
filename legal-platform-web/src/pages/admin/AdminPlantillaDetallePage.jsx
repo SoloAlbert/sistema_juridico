@@ -49,6 +49,9 @@ const [estructuraBloques, setEstructuraBloques] = useState([]);
 const [plantillasMaestras, setPlantillasMaestras] = useState([]);
 const [idMaestraSeleccionada, setIdMaestraSeleccionada] = useState(null);
 
+const [tiposDocumento, setTiposDocumento] = useState([]);
+const [idTipoDocumentoSugerido, setIdTipoDocumentoSugerido] = useState(null);
+
   useEffect(() => {
     cargarTodo();
   }, [id]);
@@ -96,12 +99,20 @@ const cargarPlantillaMaestraEnBuilder = () => {
     try {
       setLoading(true);
 
-      const [catalogosRes, plantillaRes, bloquesRes, maestrasRes] = await Promise.all([
+      const [catalogosRes, plantillaRes, bloquesRes, maestrasRes, tiposRes] = await Promise.all([
   api.get('/admin/plantillas/catalogos'),
   api.get(`/admin/plantillas/${id}`),
   api.get('/admin/bloques-html'),
-  api.get('/admin/plantillas-maestras')
+  api.get('/admin/plantillas-maestras'),
+  api.get('/admin/tipos-documento')
 ]);
+
+setTiposDocumento(
+  (tiposRes.data.data || []).filter((item) => item.activo).map((item) => ({
+    label: item.nombre,
+    value: item.id_tipo_documento
+  }))
+);
 
 setBloquesHtml((bloquesRes.data.data || []).filter((item) => item.activo));
 setPlantillasMaestras((maestrasRes.data.data || []).filter((item) => item.activo));
@@ -124,6 +135,7 @@ setPlantillasMaestras((maestrasRes.data.data || []).filter((item) => item.activo
       setPlantilla(data);
 
       setFormPlantilla({
+        id_tipo_documento: data.id_tipo_documento || null,
         id_categoria_plantilla: data.id_categoria_plantilla,
         id_especialidad: data.id_especialidad,
         titulo: data.titulo,
@@ -201,6 +213,62 @@ if (versionActual?.estructura_bloques_json) {
       setError(err.response?.data?.message || 'Error al guardar plantilla');
     } finally {
       setSavingPlantilla(false);
+    }
+  };
+
+  const aplicarSugerenciasPorTipo = async () => {
+    try {
+      setError('');
+      setSuccess('');
+
+      const idTipo = formPlantilla?.id_tipo_documento;
+      if (!idTipo) {
+        setError('Primero selecciona un tipo de documento');
+        return;
+      }
+
+      const { data } = await api.get(`/admin/tipos-documento/${idTipo}/sugerencia`);
+      const sugerencia = data.data?.sugerencia;
+
+      if (!sugerencia) {
+        setError('Este tipo de documento todavia no tiene sugerencias configuradas');
+        return;
+      }
+
+      let bloques = [];
+      let variablesSugeridas = [];
+
+      try {
+        bloques = sugerencia.bloques_sugeridos_json
+          ? JSON.parse(sugerencia.bloques_sugeridos_json)
+          : [];
+      } catch {
+        bloques = [];
+      }
+
+      try {
+        variablesSugeridas = sugerencia.variables_sugeridas_json
+          ? JSON.parse(sugerencia.variables_sugeridas_json)
+          : [];
+      } catch {
+        variablesSugeridas = [];
+      }
+
+      if (Array.isArray(bloques) && bloques.length > 0) {
+        setEstructuraBloques(bloques);
+      }
+
+      if (Array.isArray(variablesSugeridas) && variablesSugeridas.length > 0) {
+        setVariables(variablesSugeridas);
+      }
+
+      if (sugerencia.id_plantilla_maestra) {
+        setIdMaestraSeleccionada(sugerencia.id_plantilla_maestra);
+      }
+
+      setSuccess('Sugerencias aplicadas correctamente');
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al aplicar sugerencias');
     }
   };
 
@@ -405,6 +473,27 @@ const actualizarBloqueEstructura = (index, field, value) => {
           <TabPanel header="Plantilla">
             <Card className="shadow-2">
               <div className="grid">
+                <div className="col-12">
+                  <div className="surface-50 border-round p-3">
+                    <div className="flex justify-content-between align-items-center flex-wrap gap-2">
+                      <div>
+                        <h4 className="m-0">Sugerencias inteligentes</h4>
+                        <small className="text-600">
+                          Usa el tipo de documento para cargar estructura y variables sugeridas.
+                        </small>
+                      </div>
+
+                      <Button
+                        type="button"
+                        label="Aplicar sugerencias del tipo"
+                        icon="pi pi-bolt"
+                        outlined
+                        onClick={aplicarSugerenciasPorTipo}
+                      />
+                    </div>
+                  </div>
+                </div>
+
                 <div className="col-12 md:col-6">
                   <label className="block mb-2">Categoría</label>
                   <Dropdown
@@ -412,6 +501,17 @@ const actualizarBloqueEstructura = (index, field, value) => {
                     options={categorias}
                     onChange={(e) => setFormValue('id_categoria_plantilla', e.value)}
                     className="w-full"
+                  />
+                </div>
+
+                <div className="col-12 md:col-6">
+                  <label className="block mb-2">Tipo de documento</label>
+                  <Dropdown
+                    value={formPlantilla.id_tipo_documento}
+                    options={tiposDocumento}
+                    onChange={(e) => setFormValue('id_tipo_documento', e.value)}
+                    className="w-full"
+                    placeholder="Selecciona un tipo"
                   />
                 </div>
 

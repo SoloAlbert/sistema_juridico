@@ -142,19 +142,20 @@ const obtenerPlantillaAdminPorId = async (req, res) => {
 const crearPlantillaAdmin = async (req, res) => {
   try {
     const {
-      id_categoria_plantilla,
-      id_especialidad,
-      titulo,
-      slug,
-      descripcion_corta,
-      descripcion_larga,
-      precio,
-      moneda,
-      version_actual,
-      tipo_archivo_salida,
-      requiere_revision_manual,
-      activo
-    } = req.body;
+  id_categoria_plantilla,
+  id_especialidad,
+  id_tipo_documento,
+  titulo,
+  slug,
+  descripcion_corta,
+  descripcion_larga,
+  precio,
+  moneda,
+  version_actual,
+  tipo_archivo_salida,
+  requiere_revision_manual,
+  activo
+} = req.body;
 
     if (!id_categoria_plantilla || !id_especialidad || !titulo || !slug) {
       return res.status(400).json({
@@ -176,37 +177,39 @@ const crearPlantillaAdmin = async (req, res) => {
     }
 
     const [result] = await pool.query(
-      `INSERT INTO plantillas_legales
-      (
-        id_categoria_plantilla,
-        id_especialidad,
-        titulo,
-        slug,
-        descripcion_corta,
-        descripcion_larga,
-        precio,
-        moneda,
-        version_actual,
-        tipo_archivo_salida,
-        requiere_revision_manual,
-        activo
-      )
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-      [
-        id_categoria_plantilla,
-        id_especialidad,
-        titulo,
-        slug,
-        descripcion_corta || null,
-        descripcion_larga || null,
-        Number(precio || 0),
-        moneda || 'MXN',
-        version_actual || '1.0',
-        tipo_archivo_salida || 'pdf',
-        requiere_revision_manual ? 1 : 0,
-        activo ? 1 : 0
-      ]
-    );
+  `INSERT INTO plantillas_legales
+  (
+    id_categoria_plantilla,
+    id_especialidad,
+    id_tipo_documento,
+    titulo,
+    slug,
+    descripcion_corta,
+    descripcion_larga,
+    precio,
+    moneda,
+    version_actual,
+    tipo_archivo_salida,
+    requiere_revision_manual,
+    activo
+  )
+  VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+  [
+    id_categoria_plantilla,
+    id_especialidad,
+    id_tipo_documento || null,
+    titulo,
+    slug,
+    descripcion_corta || null,
+    descripcion_larga || null,
+    Number(precio || 0),
+    moneda || 'MXN',
+    version_actual || '1.0',
+    tipo_archivo_salida || 'pdf',
+    requiere_revision_manual ? 1 : 0,
+    activo ? 1 : 0
+  ]
+);
 
     return res.status(201).json({
       ok: true,
@@ -228,53 +231,56 @@ const actualizarPlantillaAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const {
-      id_categoria_plantilla,
-      id_especialidad,
-      titulo,
-      slug,
-      descripcion_corta,
-      descripcion_larga,
-      precio,
-      moneda,
-      version_actual,
-      tipo_archivo_salida,
-      requiere_revision_manual,
-      activo
-    } = req.body;
+  id_categoria_plantilla,
+  id_especialidad,
+  id_tipo_documento,
+  titulo,
+  slug,
+  descripcion_corta,
+  descripcion_larga,
+  precio,
+  moneda,
+  version_actual,
+  tipo_archivo_salida,
+  requiere_revision_manual,
+  activo
+} = req.body;
 
     await pool.query(
-      `UPDATE plantillas_legales
-       SET
-         id_categoria_plantilla = ?,
-         id_especialidad = ?,
-         titulo = ?,
-         slug = ?,
-         descripcion_corta = ?,
-         descripcion_larga = ?,
-         precio = ?,
-         moneda = ?,
-         version_actual = ?,
-         tipo_archivo_salida = ?,
-         requiere_revision_manual = ?,
-         activo = ?,
-         updated_at = CURRENT_TIMESTAMP
-       WHERE id_plantilla = ?`,
-      [
-        id_categoria_plantilla,
-        id_especialidad,
-        titulo,
-        slug,
-        descripcion_corta || null,
-        descripcion_larga || null,
-        Number(precio || 0),
-        moneda || 'MXN',
-        version_actual || '1.0',
-        tipo_archivo_salida || 'pdf',
-        requiere_revision_manual ? 1 : 0,
-        activo ? 1 : 0,
-        id
-      ]
-    );
+  `UPDATE plantillas_legales
+   SET
+     id_categoria_plantilla = ?,
+     id_especialidad = ?,
+     id_tipo_documento = ?,
+     titulo = ?,
+     slug = ?,
+     descripcion_corta = ?,
+     descripcion_larga = ?,
+     precio = ?,
+     moneda = ?,
+     version_actual = ?,
+     tipo_archivo_salida = ?,
+     requiere_revision_manual = ?,
+     activo = ?,
+     updated_at = CURRENT_TIMESTAMP
+   WHERE id_plantilla = ?`,
+  [
+    id_categoria_plantilla,
+    id_especialidad,
+    id_tipo_documento || null,
+    titulo,
+    slug,
+    descripcion_corta || null,
+    descripcion_larga || null,
+    Number(precio || 0),
+    moneda || 'MXN',
+    version_actual || '1.0',
+    tipo_archivo_salida || 'pdf',
+    requiere_revision_manual ? 1 : 0,
+    activo ? 1 : 0,
+    id
+  ]
+);
 
     return res.json({
       ok: true,

@@ -16,6 +16,7 @@ const plantillasRoutes = require('./routes/plantillas.routes');
 const adminPlantillasRoutes = require('./routes/adminPlantillas.routes');
 const adminBloquesHtmlRoutes = require('./routes/adminBloquesHtml.routes');
 const adminPlantillasMaestrasRoutes = require('./routes/adminPlantillasMaestras.routes');
+const adminTiposDocumentoRoutes = require('./routes/adminTiposDocumento.routes');
 
 const app = express();
 
@@ -52,7 +53,7 @@ app.use('/api/plantillas', plantillasRoutes);
 app.use('/api/admin/plantillas', adminPlantillasRoutes);
 app.use('/api/admin/bloques-html', adminBloquesHtmlRoutes);
 app.use('/api/admin/plantillas-maestras', adminPlantillasMaestrasRoutes);
-
+app.use('/api/admin/tipos-documento', adminTiposDocumentoRoutes);
 
 const PORT = process.env.PORT || 3003;
 
