@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { registrarBitacoraAdmin } = require('../services/adminBitacora.service');
 
 const listarTiposDocumentoAdmin = async (req, res) => {
   try {
@@ -106,6 +107,22 @@ const crearTipoDocumentoAdmin = async (req, res) => {
       ]
     );
 
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'tipos_documento',
+      entidad: 'tipos_documento',
+      id_entidad: result.insertId,
+      accion: 'crear',
+      descripcion: `Creó el tipo de documento "${nombre}"`,
+      datos_despues: {
+        nombre,
+        slug,
+        descripcion,
+        activo
+      },
+      req
+    });
+
     return res.status(201).json({
       ok: true,
       message: 'Tipo de documento creado correctamente',
@@ -150,6 +167,16 @@ const actualizarTipoDocumentoAdmin = async (req, res) => {
       });
     }
 
+    const [antesRows] = await pool.query(
+      `SELECT *
+       FROM tipos_documento
+       WHERE id_tipo_documento = ?
+       LIMIT 1`,
+      [id]
+    );
+
+    const antes = antesRows[0] || null;
+
     await pool.query(
       `UPDATE tipos_documento
        SET
@@ -167,6 +194,23 @@ const actualizarTipoDocumentoAdmin = async (req, res) => {
         id
       ]
     );
+
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'tipos_documento',
+      entidad: 'tipos_documento',
+      id_entidad: id,
+      accion: 'actualizar',
+      descripcion: `Actualizó el tipo de documento "${nombre}"`,
+      datos_antes: antes,
+      datos_despues: {
+        nombre,
+        slug,
+        descripcion,
+        activo
+      },
+      req
+    });
 
     return res.json({
       ok: true,
@@ -308,6 +352,23 @@ const guardarSugerenciaPorTipoAdmin = async (req, res) => {
         ]
       );
 
+      await registrarBitacoraAdmin({
+        id_usuario: req.user.id_usuario,
+        modulo: 'tipos_documento',
+        entidad: 'tipos_documento_sugerencias',
+        id_entidad: id,
+        accion: 'guardar_sugerencia',
+        descripcion: `Guardó la sugerencia inteligente del tipo de documento ${id}`,
+        datos_despues: {
+          id_plantilla_maestra,
+          notas_sugeridas,
+          activo,
+          total_variables: Array.isArray(variables_sugeridas_json) ? variables_sugeridas_json.length : 0,
+          total_bloques: Array.isArray(bloques_sugeridos_json) ? bloques_sugeridos_json.length : 0
+        },
+        req
+      });
+
       return res.json({
         ok: true,
         message: 'Sugerencia actualizada correctamente'
@@ -334,6 +395,23 @@ const guardarSugerenciaPorTipoAdmin = async (req, res) => {
         activo ? 1 : 0
       ]
     );
+
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'tipos_documento',
+      entidad: 'tipos_documento_sugerencias',
+      id_entidad: id,
+      accion: 'guardar_sugerencia',
+      descripcion: `Guardó la sugerencia inteligente del tipo de documento ${id}`,
+      datos_despues: {
+        id_plantilla_maestra,
+        notas_sugeridas,
+        activo,
+        total_variables: Array.isArray(variables_sugeridas_json) ? variables_sugeridas_json.length : 0,
+        total_bloques: Array.isArray(bloques_sugeridos_json) ? bloques_sugeridos_json.length : 0
+      },
+      req
+    });
 
     return res.status(201).json({
       ok: true,

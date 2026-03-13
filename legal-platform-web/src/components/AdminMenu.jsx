@@ -29,7 +29,12 @@ export default function AdminMenu() {
       label: 'Tipos de documento',
       icon: 'pi pi-sitemap',
       command: () => navigate('/admin/tipos-documento')
-    }
+    },
+    {
+      label: 'Bitácora',
+      icon: 'pi pi-history',
+      command: () => navigate('/admin/bitacora')
+   }
   ];
 
   return <Menubar model={items} className="mb-4" />;

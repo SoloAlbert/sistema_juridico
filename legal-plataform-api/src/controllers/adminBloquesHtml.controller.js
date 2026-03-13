@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { registrarBitacoraAdmin } = require('../services/adminBitacora.service');
 
 const listarBloquesHtmlAdmin = async (req, res) => {
   try {
@@ -108,6 +109,22 @@ const crearBloqueHtmlAdmin = async (req, res) => {
       ]
     );
 
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'bloques_html',
+      entidad: 'plantilla_bloques_html',
+      id_entidad: result.insertId,
+      accion: 'crear',
+      descripcion: `Creó el bloque "${nombre}"`,
+      datos_despues: {
+        nombre,
+        slug,
+        categoria,
+        activo
+      },
+      req
+    });
+
     return res.status(201).json({
       ok: true,
       message: 'Bloque creado correctamente',
@@ -128,6 +145,16 @@ const actualizarBloqueHtmlAdmin = async (req, res) => {
   try {
     const { id } = req.params;
     const { nombre, slug, descripcion, categoria, html_base, activo } = req.body;
+
+    const [antesRows] = await pool.query(
+      `SELECT *
+       FROM plantilla_bloques_html
+       WHERE id_bloque = ?
+       LIMIT 1`,
+      [id]
+    );
+
+    const antes = antesRows[0] || null;
 
     await pool.query(
       `UPDATE plantilla_bloques_html
@@ -150,6 +177,23 @@ const actualizarBloqueHtmlAdmin = async (req, res) => {
         id
       ]
     );
+
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'bloques_html',
+      entidad: 'plantilla_bloques_html',
+      id_entidad: id,
+      accion: 'actualizar',
+      descripcion: `Actualizó el bloque "${nombre}"`,
+      datos_antes: antes,
+      datos_despues: {
+        nombre,
+        slug,
+        categoria,
+        activo
+      },
+      req
+    });
 
     return res.json({
       ok: true,
@@ -205,6 +249,23 @@ const clonarBloqueHtmlAdmin = async (req, res) => {
         original.activo
       ]
     );
+
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'bloques_html',
+      entidad: 'plantilla_bloques_html',
+      id_entidad: result.insertId,
+      accion: 'clonar',
+      descripcion: `Clonó el bloque "${original.nombre}"`,
+      datos_antes: {
+        slug_origen: original.slug
+      },
+      datos_despues: {
+        nombre: `${original.nombre} (Copia)`,
+        slug: nuevoSlug
+      },
+      req
+    });
 
     return res.status(201).json({
       ok: true,

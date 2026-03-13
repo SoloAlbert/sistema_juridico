@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { registrarBitacoraAdmin } = require('../services/adminBitacora.service');
 
 const listarPlantillasMaestrasAdmin = async (req, res) => {
   try {
@@ -115,6 +116,22 @@ const crearPlantillaMaestraAdmin = async (req, res) => {
       ]
     );
 
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'plantillas_maestras',
+      entidad: 'plantilla_maestra_html',
+      id_entidad: result.insertId,
+      accion: 'crear',
+      descripcion: `Creó la plantilla maestra "${nombre}"`,
+      datos_despues: {
+        nombre,
+        slug,
+        categoria,
+        activo
+      },
+      req
+    });
+
     return res.status(201).json({
       ok: true,
       message: 'Plantilla maestra creada correctamente',
@@ -143,6 +160,16 @@ const actualizarPlantillaMaestraAdmin = async (req, res) => {
       activo
     } = req.body;
 
+    const [antesRows] = await pool.query(
+      `SELECT *
+       FROM plantilla_maestra_html
+       WHERE id_plantilla_maestra = ?
+       LIMIT 1`,
+      [id]
+    );
+
+    const antes = antesRows[0] || null;
+
     await pool.query(
       `UPDATE plantilla_maestra_html
        SET
@@ -164,6 +191,23 @@ const actualizarPlantillaMaestraAdmin = async (req, res) => {
         id
       ]
     );
+
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'plantillas_maestras',
+      entidad: 'plantilla_maestra_html',
+      id_entidad: id,
+      accion: 'actualizar',
+      descripcion: `Actualizó la plantilla maestra "${nombre}"`,
+      datos_antes: antes,
+      datos_despues: {
+        nombre,
+        slug,
+        categoria,
+        activo
+      },
+      req
+    });
 
     return res.json({
       ok: true,
@@ -219,6 +263,23 @@ const clonarPlantillaMaestraAdmin = async (req, res) => {
         original.activo
       ]
     );
+
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'plantillas_maestras',
+      entidad: 'plantilla_maestra_html',
+      id_entidad: result.insertId,
+      accion: 'clonar',
+      descripcion: `Clonó la plantilla maestra "${original.nombre}"`,
+      datos_antes: {
+        slug_origen: original.slug
+      },
+      datos_despues: {
+        nombre: `${original.nombre} (Copia)`,
+        slug: nuevoSlug
+      },
+      req
+    });
 
     return res.status(201).json({
       ok: true,

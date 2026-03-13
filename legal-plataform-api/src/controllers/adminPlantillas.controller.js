@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { registrarBitacoraAdmin } = require('../services/adminBitacora.service');
 
 const listarCatalogosPlantillas = async (req, res) => {
   try {
@@ -178,7 +179,7 @@ const crearPlantillaAdmin = async (req, res) => {
       });
     }
 
-    const [result] = await pool.query(
+const [result] = await pool.query(
   `INSERT INTO plantillas_legales
   (
     id_categoria_plantilla,
@@ -215,6 +216,24 @@ const crearPlantillaAdmin = async (req, res) => {
   ]
 );
 
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'plantillas',
+      entidad: 'plantillas_legales',
+      id_entidad: result.insertId,
+      accion: 'crear',
+      descripcion: `Creó la plantilla "${titulo}"`,
+      datos_despues: {
+        id_categoria_plantilla,
+        id_especialidad,
+        id_tipo_documento,
+        titulo,
+        slug,
+        estatus_publicacion: estatus_publicacion || 'borrador'
+      },
+      req
+    });
+
     return res.status(201).json({
       ok: true,
       message: 'Plantilla creada correctamente',
@@ -250,6 +269,16 @@ const actualizarPlantillaAdmin = async (req, res) => {
   activo,
   estatus_publicacion
 } = req.body;
+
+    const [antesRows] = await pool.query(
+      `SELECT *
+       FROM plantillas_legales
+       WHERE id_plantilla = ?
+       LIMIT 1`,
+      [id]
+    );
+
+    const antes = antesRows[0] || null;
 
     await pool.query(
   `UPDATE plantillas_legales
@@ -288,6 +317,33 @@ const actualizarPlantillaAdmin = async (req, res) => {
     id
   ]
 );
+
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'plantillas',
+      entidad: 'plantillas_legales',
+      id_entidad: id,
+      accion: 'actualizar',
+      descripcion: `Actualizó la plantilla "${titulo}"`,
+      datos_antes: antes,
+      datos_despues: {
+        id_categoria_plantilla,
+        id_especialidad,
+        id_tipo_documento,
+        titulo,
+        slug,
+        descripcion_corta,
+        descripcion_larga,
+        precio,
+        moneda,
+        version_actual,
+        tipo_archivo_salida,
+        requiere_revision_manual,
+        activo,
+        estatus_publicacion
+      },
+      req
+    });
 
     return res.json({
       ok: true,
@@ -657,6 +713,27 @@ const clonarPlantillaAdmin = async (req, res) => {
         ]
       );
     }
+
+    await registrarBitacoraAdmin({
+      id_usuario: req.user.id_usuario,
+      modulo: 'plantillas',
+      entidad: 'plantillas_legales',
+      id_entidad: nuevoIdPlantilla,
+      accion: 'clonar',
+      descripcion: `Clonó la plantilla "${original.titulo}"`,
+      datos_antes: {
+        id_plantilla_origen: id,
+        titulo_origen: original.titulo,
+        slug_origen: original.slug
+      },
+      datos_despues: {
+        id_plantilla: nuevoIdPlantilla,
+        titulo: `${original.titulo} (Copia)`,
+        slug: nuevoSlug
+      },
+      req,
+      connection
+    });
 
     await connection.commit();
 

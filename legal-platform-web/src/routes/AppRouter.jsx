@@ -47,6 +47,8 @@ import AdminTiposDocumentoPage from '../pages/admin/AdminTiposDocumentoPage';
 import AdminTipoDocumentoDetallePage from '../pages/admin/AdminTipoDocumentoDetallePage';
 import AdminTipoDocumentoSugerenciaPage from '../pages/admin/AdminTipoDocumentoSugerenciaPage';
 
+import AdminBitacoraPage from '../pages/admin/AdminBitacoraPage';
+
 export default function AppRouter() {
   return (
     <BrowserRouter>
@@ -383,6 +385,15 @@ export default function AppRouter() {
   element={
     <ProtectedRoute role="admin">
       <AdminTipoDocumentoSugerenciaPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/bitacora"
+  element={
+    <ProtectedRoute role="admin">
+      <AdminBitacoraPage />
     </ProtectedRoute>
   }
 />
