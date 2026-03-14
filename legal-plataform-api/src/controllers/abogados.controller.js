@@ -313,11 +313,14 @@ const obtenerAbogadoPublicoPorId = async (req, res) => {
         a.moneda,
         a.rating_promedio,
         a.total_resenas,
+        av.badge_verificado,
+        av.estatus_general,
         d.estado,
         d.municipio,
         d.ciudad
       FROM abogados a
       INNER JOIN usuarios u ON u.id_usuario = a.id_usuario
+      LEFT JOIN abogado_verificaciones av ON av.id_abogado = a.id_abogado
       LEFT JOIN direcciones d ON d.id_usuario = u.id_usuario
       WHERE a.id_abogado = ?
       LIMIT 1`,
@@ -332,6 +335,8 @@ const obtenerAbogadoPublicoPorId = async (req, res) => {
     }
 
     const abogado = rows[0];
+    abogado.badge_verificado = !!abogado.badge_verificado;
+    abogado.estatus_verificacion = abogado.estatus_general || null;
 
     const [especialidades] = await pool.query(
       `SELECT

@@ -16,6 +16,11 @@ export default function AbogadoMenu() {
       command: () => navigate('/abogado/mi-perfil')
     },
     {
+      label: 'Mi verificación',
+      icon: 'pi pi-verified',
+      command: () => navigate('/abogado/verificacion')
+    },
+    {
       label: 'Casos Disponibles',
       icon: 'pi pi-briefcase',
       command: () => navigate('/abogado/casos-disponibles')

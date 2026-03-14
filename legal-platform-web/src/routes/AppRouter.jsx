@@ -21,6 +21,7 @@ import MiPerfilAbogadoPage from '../pages/abogado/MiPerfilAbogadoPage';
 import CasosDisponiblesPage from '../pages/abogado/CasosDisponiblesPage';
 import DetalleCasoDisponiblePage from '../pages/abogado/DetalleCasoDisponiblePage';
 import IngresosAbogadoPage from '../pages/abogado/IngresosAbogadoPage';
+import MiVerificacionPage from '../pages/abogado/MiVerificacionPage';
 
 import ConversacionesPage from '../pages/shared/ConversacionesPage';
 import ConversacionDetallePage from '../pages/shared/ConversacionDetallePage';
@@ -50,6 +51,7 @@ import AdminTipoDocumentoSugerenciaPage from '../pages/admin/AdminTipoDocumentoS
 import AdminBitacoraPage from '../pages/admin/AdminBitacoraPage';
 
 import AdminPapeleraPage from '../pages/admin/AdminPapeleraPage';
+import AdminVerificacionesPage from '../pages/admin/AdminVerificacionesPage';
 
 export default function AppRouter() {
   return (
@@ -181,6 +183,15 @@ export default function AppRouter() {
           element={
             <ProtectedRoute role="abogado">
               <MiPerfilAbogadoPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/abogado/verificacion"
+          element={
+            <ProtectedRoute role="abogado">
+              <MiVerificacionPage />
             </ProtectedRoute>
           }
         />
@@ -387,6 +398,15 @@ export default function AppRouter() {
   element={
     <ProtectedRoute role="admin">
       <AdminTipoDocumentoSugerenciaPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/verificaciones"
+  element={
+    <ProtectedRoute role="admin">
+      <AdminVerificacionesPage />
     </ProtectedRoute>
   }
 />

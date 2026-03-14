@@ -62,6 +62,9 @@ export default function PerfilPublicoAbogadoPage() {
 
                 <div className="mb-3">
                   <Tag value={abogado.modalidad_atencion} severity="info" />
+                  {abogado.badge_verificado && (
+                    <Tag value="Verificado" severity="success" className="ml-2" />
+                  )}
                 </div>
 
                 <p className="m-0 mb-2"><strong>Despacho:</strong> {abogado.nombre_despacho || 'Independiente'}</p>

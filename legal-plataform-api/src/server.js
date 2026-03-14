@@ -20,6 +20,8 @@ const adminTiposDocumentoRoutes = require('./routes/adminTiposDocumento.routes')
 const adminBitacoraRoutes = require('./routes/adminBitacora.routes');
 const adminPapeleraRoutes = require('./routes/adminPapelera.routes');
 const adminDashboardRoutes = require('./routes/adminDashboard.routes');
+const abogadoVerificacionRoutes = require('./routes/abogadoVerificacion.routes');
+const adminVerificacionesRoutes = require('./routes/adminVerificaciones.routes');
 
 const app = express();
 
@@ -60,6 +62,9 @@ app.use('/api/admin/tipos-documento', adminTiposDocumentoRoutes);
 app.use('/api/admin/bitacora', adminBitacoraRoutes);
 app.use('/api/admin/papelera', adminPapeleraRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/abogado/verificacion', abogadoVerificacionRoutes);
+app.use('/api/admin/verificaciones', adminVerificacionesRoutes);
+app.use('/verificaciones_abogados',express.static(path.join(__dirname, '../storage/verificaciones_abogados')));
 
 const PORT = process.env.PORT || 3003;
 
