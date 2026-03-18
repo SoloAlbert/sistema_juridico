@@ -23,6 +23,7 @@ const adminDashboardRoutes = require('./routes/adminDashboard.routes');
 const abogadoVerificacionRoutes = require('./routes/abogadoVerificacion.routes');
 const adminVerificacionesRoutes = require('./routes/adminVerificaciones.routes');
 const clienteCasosRoutes = require('./routes/clienteCasos.routes');
+const notificacionesRoutes = require('./routes/notificaciones.routes');
 
 const app = express();
 
@@ -81,6 +82,7 @@ app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/abogado/verificacion', abogadoVerificacionRoutes);
 app.use('/api/admin/verificaciones', adminVerificacionesRoutes);
 app.use('/api/cliente/casos', clienteCasosRoutes);
+app.use('/api/notificaciones', notificacionesRoutes);
 app.use('/verificaciones_abogados',express.static(path.join(__dirname, '../storage/verificaciones_abogados')));
 
 const PORT = process.env.PORT || 3003;

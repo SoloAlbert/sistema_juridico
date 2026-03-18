@@ -21,6 +21,7 @@ export default function AbogadoDashboard() {
       reuniones_proximas: 0,
       documentos_recientes: 0,
       ingresos: 0,
+      notificaciones_no_leidas: 0,
       tareas_pendientes: 0
     },
     casos_nuevos: [],
@@ -64,12 +65,7 @@ export default function AbogadoDashboard() {
           <Tag value={titulo} severity={severity} />
         </div>
         {onClick && (
-          <Button
-            label="Ver detalle"
-            outlined
-            size="small"
-            onClick={onClick}
-          />
+          <Button label="Ver detalle" outlined size="small" onClick={onClick} />
         )}
       </Card>
     </div>
@@ -81,7 +77,7 @@ export default function AbogadoDashboard() {
 
       <div className="mb-4">
         <h1 className="m-0">Panel del abogado</h1>
-        <p className="text-700">Casos, mensajes, citas, documentos e ingresos en un solo tablero.</p>
+        <p className="text-700">Casos, mensajes, citas, documentos, ingresos y alertas en un solo tablero.</p>
       </div>
 
       {error && <Message severity="error" text={error} className="w-full mb-3" />}
@@ -92,11 +88,12 @@ export default function AbogadoDashboard() {
         <>
           <div className="grid">
             {tarjetaResumen('Casos nuevos', data.resumen?.casos_nuevos || 0, 'warning', () => navigate('/abogado/casos-disponibles'))}
-            {tarjetaResumen('Casos asignados', data.resumen?.casos_asignados || 0, 'info')}
+            {tarjetaResumen('Casos asignados', data.resumen?.casos_asignados || 0, 'info', () => navigate('/abogado/mis-casos'))}
             {tarjetaResumen('Mensajes sin leer', data.resumen?.mensajes_sin_leer || 0, 'danger', () => navigate('/abogado/conversaciones'))}
-            {tarjetaResumen('Reuniones próximas', data.resumen?.reuniones_proximas || 0, 'success', () => navigate('/abogado/citas'))}
+            {tarjetaResumen('Reuniones proximas', data.resumen?.reuniones_proximas || 0, 'success', () => navigate('/abogado/citas'))}
             {tarjetaResumen('Documentos recientes', data.resumen?.documentos_recientes || 0, 'contrast', () => navigate('/abogado/documentos'))}
             {tarjetaResumen('Ingresos', formatoMoneda(data.resumen?.ingresos || 0), 'success', () => navigate('/abogado/ingresos'))}
+            {tarjetaResumen('Notificaciones', data.resumen?.notificaciones_no_leidas || 0, 'warning', () => navigate('/abogado/notificaciones'))}
             {tarjetaResumen('Tareas pendientes', data.resumen?.tareas_pendientes || 0, 'warning')}
           </div>
 
@@ -121,17 +118,12 @@ export default function AbogadoDashboard() {
                           <div className="font-semibold">{item.folio_caso}</div>
                           <div className="text-700">{item.titulo}</div>
                           <small className="text-600">
-                            {item.ciudad || '-'}, {item.estado_republica || '-'} · {item.urgencia}
+                            {item.ciudad || '-'}, {item.estado_republica || '-'} | {item.urgencia}
                           </small>
                         </div>
                         <div className="flex gap-2 flex-wrap">
                           <Tag value={item.urgencia} severity="warning" />
-                          <Button
-                            size="small"
-                            label="Ver"
-                            outlined
-                            onClick={() => navigate('/abogado/casos-disponibles')}
-                          />
+                          <Button size="small" label="Ver" outlined onClick={() => navigate('/abogado/casos-disponibles')} />
                         </div>
                       </div>
                       {index < data.casos_nuevos.length - 1 && <Divider />}
@@ -153,7 +145,7 @@ export default function AbogadoDashboard() {
                           <div className="font-semibold">{item.folio_caso}</div>
                           <div className="text-700">{item.titulo}</div>
                           <small className="text-600">
-                            {item.estado} · servicio {item.estado_servicio} · {formatoMoneda(item.monto_acordado)}
+                            {item.estado} | servicio {item.estado_servicio} | {formatoMoneda(item.monto_acordado)}
                           </small>
                         </div>
                         <Tag value={item.estado} severity={item.estado === 'en_proceso' ? 'success' : 'info'} />
@@ -166,9 +158,9 @@ export default function AbogadoDashboard() {
             </div>
 
             <div className="col-12 lg:col-6">
-              <Card title="Próximas reuniones" className="shadow-2 h-full">
+              <Card title="Proximas reuniones" className="shadow-2 h-full">
                 {(data.proximas_reuniones || []).length === 0 ? (
-                  <p>No hay reuniones próximas.</p>
+                  <p>No hay reuniones proximas.</p>
                 ) : (
                   data.proximas_reuniones.map((item, index) => (
                     <div key={item.id_cita}>
@@ -177,7 +169,7 @@ export default function AbogadoDashboard() {
                           <div className="font-semibold">{item.titulo}</div>
                           <div className="text-700">{item.titulo_caso}</div>
                           <small className="text-600">
-                            {item.fecha_inicio} · {item.modalidad}
+                            {item.fecha_inicio} | {item.modalidad}
                           </small>
                         </div>
                         <div className="flex gap-2 flex-wrap">
@@ -211,7 +203,7 @@ export default function AbogadoDashboard() {
                         <div>
                           <div className="font-semibold">{item.titulo_documento}</div>
                           <small className="text-600">
-                            Caso #{item.id_caso} · {item.formato_salida} · {item.created_at}
+                            Caso #{item.id_caso} | {item.formato_salida} | {item.created_at}
                           </small>
                         </div>
                         <Tag value={item.estatus} severity="success" />

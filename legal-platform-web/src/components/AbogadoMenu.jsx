@@ -51,6 +51,11 @@ export default function AbogadoMenu() {
       command: () => navigate('/abogado/ingresos')
     },
     {
+      label: 'Notificaciones',
+      icon: 'pi pi-bell',
+      command: () => navigate('/abogado/notificaciones')
+    },
+    {
       label: 'Conversaciones',
       icon: 'pi pi-comments',
       command: () => navigate('/abogado/conversaciones')

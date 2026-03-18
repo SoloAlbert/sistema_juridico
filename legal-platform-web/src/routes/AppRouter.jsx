@@ -23,6 +23,7 @@ import DetalleCasoDisponiblePage from '../pages/abogado/DetalleCasoDisponiblePag
 import MisCasosAbogadoPage from '../pages/abogado/MisCasosAbogadoPage';
 import DetalleCasoAbogadoPage from '../pages/abogado/DetalleCasoAbogadoPage';
 import IngresosAbogadoPage from '../pages/abogado/IngresosAbogadoPage';
+import NotificacionesAbogadoPage from '../pages/abogado/NotificacionesAbogadoPage';
 import MiVerificacionPage from '../pages/abogado/MiVerificacionPage';
 
 import ConversacionesPage from '../pages/shared/ConversacionesPage';
@@ -239,6 +240,15 @@ export default function AppRouter() {
           element={
             <ProtectedRoute role="abogado">
               <IngresosAbogadoPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/abogado/notificaciones"
+          element={
+            <ProtectedRoute role="abogado">
+              <NotificacionesAbogadoPage />
             </ProtectedRoute>
           }
         />

@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { crearNotificacion, crearNotificacionesMasivas } = require('../services/notificaciones.service');
 
 const generarFolioCaso = () => {
   const now = new Date();
@@ -1278,6 +1279,24 @@ const solicitarDocumentosCasoAbogado = async (req, res) => {
       [conversaciones[0].id_conversacion, id_usuario, mensaje.trim()]
     );
 
+    const [clientesDestino] = await pool.query(
+      `SELECT cl.id_usuario
+       FROM conversaciones conv
+       INNER JOIN clientes cl ON cl.id_cliente = conv.id_cliente
+       WHERE conv.id_conversacion = ?
+       LIMIT 1`,
+      [conversaciones[0].id_conversacion]
+    );
+
+    if (clientesDestino.length > 0) {
+      await crearNotificacion({
+        id_usuario: clientesDestino[0].id_usuario,
+        tipo_notificacion: 'caso',
+        titulo: 'Solicitud de documentos',
+        mensaje: `Tu abogado solicito documentos adicionales en el caso #${id}.`
+      });
+    }
+
     return res.json({
       ok: true,
       message: 'Solicitud de documentos enviada al cliente'
@@ -1334,6 +1353,22 @@ const agregarNotaPrivadaCasoAbogado = async (req, res) => {
       VALUES (?, ?, ?)`,
       [id, id_abogado, nota.trim()]
     );
+
+    const [abogadosNotificar] = await pool.query(
+      `SELECT DISTINCT a.id_usuario
+       FROM abogados a
+       INNER JOIN abogado_especialidad ae ON ae.id_abogado = a.id_abogado
+       WHERE ae.id_especialidad = ?
+         AND a.acepta_nuevos_casos = 1`,
+      [id_especialidad]
+    );
+
+    await crearNotificacionesMasivas({
+      usuarios: abogadosNotificar.map((item) => item.id_usuario),
+      tipo_notificacion: 'caso',
+      titulo: 'Nuevo caso disponible',
+      mensaje: `Se publico el caso ${folio_caso}: ${titulo}.`
+    });
 
     return res.status(201).json({
       ok: true,

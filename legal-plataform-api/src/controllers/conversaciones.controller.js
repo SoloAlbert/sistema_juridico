@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { crearNotificacion } = require('../services/notificaciones.service');
 
 const obtenerContextoUsuario = async (id_usuario, role) => {
   if (role === 'cliente') {
@@ -254,7 +255,7 @@ const enviarMensaje = async (req, res) => {
       });
     }
 
-    let sqlConv = 'SELECT id_conversacion FROM conversaciones WHERE id_conversacion = ?';
+    let sqlConv = 'SELECT * FROM conversaciones WHERE id_conversacion = ?';
     const paramsConv = [id];
 
     if (role === 'cliente') {
@@ -303,6 +304,28 @@ const enviarMensaje = async (req, res) => {
           archivo.size || null
         ]
       );
+    }
+
+    const conversacion = conv[0];
+    const [usuariosDestino] = await connection.query(
+      role === 'cliente'
+        ? 'SELECT id_usuario FROM abogados WHERE id_abogado = ? LIMIT 1'
+        : 'SELECT id_usuario FROM clientes WHERE id_cliente = ? LIMIT 1',
+      [role === 'cliente' ? conversacion.id_abogado : conversacion.id_cliente]
+    );
+
+    if (usuariosDestino.length > 0) {
+      const resumen = archivos.length > 0 && (!mensaje || !mensaje.trim())
+        ? `Te enviaron ${archivos.length} archivo(s) nuevos en el caso #${conversacion.id_caso}.`
+        : `Nuevo mensaje en el caso #${conversacion.id_caso}: ${(mensaje || '').trim().slice(0, 120)}`;
+
+      await crearNotificacion({
+        id_usuario: usuariosDestino[0].id_usuario,
+        tipo_notificacion: 'mensaje',
+        titulo: 'Mensaje nuevo',
+        mensaje: resumen,
+        connection
+      });
     }
 
     await connection.commit();

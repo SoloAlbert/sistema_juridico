@@ -1,4 +1,5 @@
 const { pool } = require('../config/db');
+const { crearNotificacion } = require('../services/notificaciones.service');
 
 const obtenerResumenPagoCaso = async (req, res) => {
   try {
@@ -284,6 +285,21 @@ const registrarPagoCaso = async (req, res) => {
         VALUES (?, ?, ?, 'activa')`,
         [asignacion.id_caso, id_cliente, asignacion.id_abogado]
       );
+    }
+
+    const [abogadoUsuario] = await connection.query(
+      'SELECT id_usuario FROM abogados WHERE id_abogado = ? LIMIT 1',
+      [asignacion.id_abogado]
+    );
+
+    if (abogadoUsuario.length > 0) {
+      await crearNotificacion({
+        id_usuario: abogadoUsuario[0].id_usuario,
+        tipo_notificacion: 'pago',
+        titulo: 'Pago recibido',
+        mensaje: `Recibiste un pago por ${asignacion.monto_neto_abogado} MXN en el caso #${asignacion.id_caso}.`,
+        connection
+      });
     }
 
     await connection.commit();

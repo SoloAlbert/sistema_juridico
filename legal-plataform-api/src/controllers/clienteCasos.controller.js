@@ -1,5 +1,6 @@
 const { pool } = require('../config/db');
 const { crearCaso } = require('./casos.controller');
+const { crearNotificacion } = require('../services/notificaciones.service');
 
 const obtenerClienteDesdeUsuario = async (id_usuario) => {
   const [clientes] = await pool.query(
@@ -90,6 +91,24 @@ const subirArchivosCasoCliente = async (req, res) => {
         ruta_archivo: rutaRelativa,
         mime_type: file.mimetype || null,
         tamano_bytes: file.size || 0
+      });
+    }
+
+    const [abogados] = await pool.query(
+      `SELECT a.id_usuario
+       FROM caso_asignaciones ca
+       INNER JOIN abogados a ON a.id_abogado = ca.id_abogado
+       WHERE ca.id_caso = ?
+       LIMIT 1`,
+      [id]
+    );
+
+    if (abogados.length > 0) {
+      await crearNotificacion({
+        id_usuario: abogados[0].id_usuario,
+        tipo_notificacion: 'caso',
+        titulo: 'Archivos nuevos del cliente',
+        mensaje: `El cliente subio ${archivosGuardados.length} archivo(s) nuevos al caso #${id}.`
       });
     }
 

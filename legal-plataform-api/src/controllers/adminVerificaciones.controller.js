@@ -1,6 +1,7 @@
 const { pool } = require('../config/db');
 const { recalcularEstadoVerificacion } = require('../services/abogadoVerificacion.service');
 const { registrarBitacoraAdmin } = require('../services/adminBitacora.service');
+const { crearNotificacion } = require('../services/notificaciones.service');
 
 const listarVerificacionesAdmin = async (req, res) => {
   try {
@@ -169,6 +170,25 @@ const revisarDocumentoVerificacionAdmin = async (req, res) => {
       },
       req
     });
+
+    if (['rechazado', 'observado'].includes(estatus_revision)) {
+      const [abogadoUsuario] = await pool.query(
+        `SELECT id_usuario
+         FROM abogados
+         WHERE id_abogado = ?
+         LIMIT 1`,
+        [antes.id_abogado]
+      );
+
+      if (abogadoUsuario.length > 0) {
+        await crearNotificacion({
+          id_usuario: abogadoUsuario[0].id_usuario,
+          tipo_notificacion: 'sistema',
+          titulo: estatus_revision === 'rechazado' ? 'Documento rechazado' : 'Documento observado',
+          mensaje: observaciones_revision || 'Revisa el resultado de la validacion de tu documento.'
+        });
+      }
+    }
 
     return res.json({
       ok: true,

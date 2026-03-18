@@ -78,9 +78,18 @@ const obtenerDashboardAbogado = async (req, res) => {
       [id_abogado]
     );
 
+    const [notificacionesRows] = await pool.query(
+      `SELECT COUNT(*) AS total
+       FROM notificaciones
+       WHERE id_usuario = ?
+         AND leida = 0`,
+      [id_usuario]
+    );
+
     const tareasPendientes = Number(casosPendientesPagoRows[0]?.total || 0)
       + Number(mensajesSinLeerRows[0]?.total || 0)
-      + Number(reunionesProximasRows[0]?.total || 0);
+      + Number(reunionesProximasRows[0]?.total || 0)
+      + Number(notificacionesRows[0]?.total || 0);
 
     const [proximasReuniones] = await pool.query(
       `SELECT
@@ -174,6 +183,7 @@ const obtenerDashboardAbogado = async (req, res) => {
           reuniones_proximas: Number(reunionesProximasRows[0]?.total || 0),
           documentos_recientes: Number(documentosRecientesRows[0]?.total || 0),
           ingresos: Number(abogado.total_ingresos || 0),
+          notificaciones_no_leidas: Number(notificacionesRows[0]?.total || 0),
           tareas_pendientes: tareasPendientes
         },
         casos_nuevos: casosNuevosDetalle,
