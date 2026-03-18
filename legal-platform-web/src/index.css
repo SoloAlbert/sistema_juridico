@@ -1,68 +1,167 @@
 :root {
-  font-family: system-ui, Avenir, Helvetica, Arial, sans-serif;
+  --bg: #f4f6fb;
+  --surface: #ffffff;
+  --surface-soft: #faf7f0;
+  --dark: #0f172a;
+  --dark-2: #111827;
+  --soft: #617089;
+  --primary: #b9975b;
+  --primary-deep: #8c6a37;
+  --line: rgba(15, 23, 42, 0.08);
+  --line-dark: rgba(255, 255, 255, 0.1);
+  --shadow: 0 24px 60px rgba(15, 23, 42, 0.12);
+  --shadow-soft: 0 16px 38px rgba(15, 23, 42, 0.08);
+  font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
   line-height: 1.5;
   font-weight: 400;
-
-  color-scheme: light dark;
-  color: rgba(255, 255, 255, 0.87);
-  background-color: #242424;
-
+  color: var(--dark);
+  background-color: var(--bg);
   font-synthesis: none;
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-a {
-  font-weight: 500;
-  color: #646cff;
-  text-decoration: inherit;
+* {
+  box-sizing: border-box;
 }
-a:hover {
-  color: #535bf2;
+
+html {
+  background: var(--bg);
 }
 
 body {
   margin: 0;
-  display: flex;
-  place-items: center;
   min-width: 320px;
+  min-height: 100vh;
+  background:
+    radial-gradient(circle at top left, rgba(185, 151, 91, 0.12), transparent 28%),
+    linear-gradient(180deg, #f8fafc 0%, var(--bg) 100%);
+  color: var(--dark);
+}
+
+#root {
   min-height: 100vh;
 }
 
-h1 {
-  font-size: 3.2em;
-  line-height: 1.1;
+a {
+  color: var(--primary-deep);
+  text-decoration: none;
 }
 
-button {
-  border-radius: 8px;
-  border: 1px solid transparent;
-  padding: 0.6em 1.2em;
-  font-size: 1em;
-  font-weight: 500;
-  font-family: inherit;
-  background-color: #1a1a1a;
-  cursor: pointer;
-  transition: border-color 0.25s;
-}
-button:hover {
-  border-color: #646cff;
-}
-button:focus,
-button:focus-visible {
-  outline: 4px auto -webkit-focus-ring-color;
+a:hover {
+  color: var(--primary);
 }
 
-@media (prefers-color-scheme: light) {
-  :root {
-    color: #213547;
-    background-color: #ffffff;
-  }
-  a:hover {
-    color: #747bff;
-  }
-  button {
-    background-color: #f9f9f9;
-  }
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  color: var(--dark);
+}
+
+.p-card,
+.p-dialog,
+.p-sidebar,
+.p-menubar,
+.p-datatable .p-datatable-wrapper,
+.p-panel,
+.p-tabview-panels {
+  background: var(--surface);
+  border: 1px solid var(--line);
+  box-shadow: var(--shadow-soft);
+}
+
+.p-card .p-card-title,
+.p-dialog .p-dialog-title,
+.p-menubar .p-menuitem-text {
+  color: var(--dark);
+}
+
+.p-menubar {
+  border-radius: 16px;
+}
+
+.p-menubar .p-menuitem-link {
+  border-radius: 12px;
+}
+
+.p-menubar .p-menuitem-link:hover,
+.p-menubar .p-menuitem-link:focus {
+  background: var(--surface-soft);
+}
+
+.p-button {
+  background: var(--primary);
+  border-color: var(--primary);
+}
+
+.p-button:hover {
+  background: var(--primary-deep);
+  border-color: var(--primary-deep);
+}
+
+.p-button.p-button-outlined {
+  color: var(--primary-deep);
+  border-color: var(--primary);
+  background: transparent;
+}
+
+.p-button.p-button-outlined:hover {
+  background: rgba(185, 151, 91, 0.1);
+  color: var(--primary-deep);
+  border-color: var(--primary-deep);
+}
+
+.p-inputtext,
+.p-dropdown,
+.p-calendar .p-inputtext,
+.p-inputtextarea,
+.p-multiselect {
+  border-color: var(--line);
+  background: var(--surface);
+  color: var(--dark);
+}
+
+.p-inputtext:enabled:focus,
+.p-dropdown:not(.p-disabled).p-focus,
+.p-inputtextarea:enabled:focus,
+.p-calendar:not(.p-calendar-disabled).p-focus > .p-inputtext {
+  border-color: var(--primary);
+  box-shadow: 0 0 0 0.2rem rgba(185, 151, 91, 0.14);
+}
+
+.p-datatable .p-datatable-thead > tr > th {
+  background: var(--surface-soft);
+  color: var(--dark);
+  border-color: var(--line);
+}
+
+.p-datatable .p-datatable-tbody > tr {
+  background: var(--surface);
+  color: var(--dark);
+}
+
+.p-datatable .p-datatable-tbody > tr > td {
+  border-color: var(--line);
+}
+
+.p-tag {
+  border-radius: 999px;
+}
+
+.p-message {
+  border-radius: 14px;
+}
+
+.surface-50 {
+  background: var(--surface-soft) !important;
+}
+
+.text-600,
+.text-700,
+.text-500 {
+  color: var(--soft) !important;
 }
