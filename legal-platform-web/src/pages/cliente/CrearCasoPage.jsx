@@ -10,6 +10,7 @@ import { InputTextarea } from 'primereact/inputtextarea';
 import { Calendar } from 'primereact/calendar';
 import { Button } from 'primereact/button';
 import { Message } from 'primereact/message';
+import { FileUpload } from 'primereact/fileupload';
 
 export default function CrearCasoPage() {
   const [especialidades, setEspecialidades] = useState([]);
@@ -17,6 +18,7 @@ export default function CrearCasoPage() {
   const [loadingSubmit, setLoadingSubmit] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
+  const [archivos, setArchivos] = useState([]);
 
   const [form, setForm] = useState({
     id_especialidad: null,
@@ -97,9 +99,28 @@ export default function CrearCasoPage() {
         fecha_limite_respuesta: formatearFechaMySQL(form.fecha_limite_respuesta)
       };
 
-      const { data } = await api.post('/casos', payload);
+      const { data } = await api.post('/cliente/casos', payload);
+      const idCaso = data.data?.id_caso;
 
-      setSuccess(`Caso creado correctamente. Folio: ${data.data.folio_caso}`);
+      if (idCaso && archivos.length > 0) {
+        const formData = new FormData();
+
+        archivos.forEach((file) => {
+          formData.append('archivos', file);
+        });
+
+        await api.post(`/cliente/casos/${idCaso}/archivos`, formData, {
+          headers: {
+            'Content-Type': 'multipart/form-data'
+          }
+        });
+      }
+
+      setSuccess(
+        `Caso creado correctamente. Folio: ${data.data.folio_caso}${
+          archivos.length ? ` | Archivos subidos: ${archivos.length}` : ''
+        }`
+      );
 
       setForm({
         id_especialidad: null,
@@ -113,6 +134,7 @@ export default function CrearCasoPage() {
         estado_republica: '',
         fecha_limite_respuesta: null
       });
+      setArchivos([]);
     } catch (err) {
       setError(err.response?.data?.message || 'Error al crear caso');
     } finally {
@@ -226,6 +248,32 @@ export default function CrearCasoPage() {
               hourFormat="24"
               className="w-full"
             />
+          </div>
+
+          <div className="col-12">
+            <label className="block mb-2">Archivos del caso</label>
+            <FileUpload
+              mode="advanced"
+              name="archivos"
+              multiple
+              customUpload
+              auto={false}
+              chooseLabel="Seleccionar archivos"
+              uploadOptions={{ style: { display: 'none' } }}
+              cancelOptions={{ style: { display: 'none' } }}
+              onSelect={(e) => {
+                setArchivos((prev) => [...prev, ...(e.files || [])]);
+              }}
+              onRemove={(e) => {
+                setArchivos((prev) => prev.filter((item) => item.name !== e.file.name));
+              }}
+              emptyTemplate={<p className="m-0">Puedes adjuntar PDF, imágenes o Word.</p>}
+            />
+            {archivos.length > 0 && (
+              <small className="text-600 block mt-2">
+                Archivos seleccionados: {archivos.length}
+              </small>
+            )}
           </div>
 
           <div className="col-12">

@@ -20,6 +20,8 @@ import AbogadoDashboard from '../pages/abogado/AbogadoDashboard';
 import MiPerfilAbogadoPage from '../pages/abogado/MiPerfilAbogadoPage';
 import CasosDisponiblesPage from '../pages/abogado/CasosDisponiblesPage';
 import DetalleCasoDisponiblePage from '../pages/abogado/DetalleCasoDisponiblePage';
+import MisCasosAbogadoPage from '../pages/abogado/MisCasosAbogadoPage';
+import DetalleCasoAbogadoPage from '../pages/abogado/DetalleCasoAbogadoPage';
 import IngresosAbogadoPage from '../pages/abogado/IngresosAbogadoPage';
 import MiVerificacionPage from '../pages/abogado/MiVerificacionPage';
 
@@ -210,6 +212,24 @@ export default function AppRouter() {
           element={
             <ProtectedRoute role="abogado">
               <DetalleCasoDisponiblePage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/abogado/mis-casos"
+          element={
+            <ProtectedRoute role="abogado">
+              <MisCasosAbogadoPage />
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/abogado/mis-casos/:id"
+          element={
+            <ProtectedRoute role="abogado">
+              <DetalleCasoAbogadoPage />
             </ProtectedRoute>
           }
         />

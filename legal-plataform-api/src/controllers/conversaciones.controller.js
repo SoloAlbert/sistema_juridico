@@ -155,7 +155,7 @@ const obtenerMensajesConversacion = async (req, res) => {
       });
     }
 
-    const [mensajes] = await pool.query(
+    const [mensajesRows] = await pool.query(
       `SELECT
         m.id_mensaje,
         m.id_conversacion,
@@ -174,6 +174,35 @@ const obtenerMensajesConversacion = async (req, res) => {
       ORDER BY m.id_mensaje ASC`,
       [id]
     );
+
+    const [archivosRows] = await pool.query(
+      `SELECT
+        ma.id_mensaje_archivo,
+        ma.id_mensaje,
+        ma.nombre_archivo,
+        ma.ruta_archivo,
+        ma.mime_type,
+        ma.tamano_bytes
+      FROM mensaje_archivos ma
+      INNER JOIN mensajes m ON m.id_mensaje = ma.id_mensaje
+      WHERE m.id_conversacion = ?
+      ORDER BY ma.id_mensaje_archivo ASC`,
+      [id]
+    );
+
+    const archivosPorMensaje = archivosRows.reduce((acc, item) => {
+      if (!acc[item.id_mensaje]) {
+        acc[item.id_mensaje] = [];
+      }
+
+      acc[item.id_mensaje].push(item);
+      return acc;
+    }, {});
+
+    const mensajes = mensajesRows.map((item) => ({
+      ...item,
+      archivos: archivosPorMensaje[item.id_mensaje] || []
+    }));
 
     await pool.query(
       `UPDATE mensajes
@@ -201,15 +230,18 @@ const obtenerMensajesConversacion = async (req, res) => {
 };
 
 const enviarMensaje = async (req, res) => {
+  const connection = await pool.getConnection();
+
   try {
     const { id_usuario, role } = req.user;
     const { id } = req.params;
     const { mensaje } = req.body;
+    const archivos = Array.isArray(req.files) ? req.files : [];
 
-    if (!mensaje || !mensaje.trim()) {
+    if ((!mensaje || !mensaje.trim()) && archivos.length === 0) {
       return res.status(400).json({
         ok: false,
-        message: 'El mensaje es obligatorio'
+        message: 'Debes enviar un mensaje o al menos un archivo'
       });
     }
 
@@ -238,7 +270,7 @@ const enviarMensaje = async (req, res) => {
       });
     }
 
-    const [conv] = await pool.query(sqlConv, paramsConv);
+    const [conv] = await connection.query(sqlConv, paramsConv);
 
     if (conv.length === 0) {
       return res.status(404).json({
@@ -247,26 +279,51 @@ const enviarMensaje = async (req, res) => {
       });
     }
 
-    const [result] = await pool.query(
+    await connection.beginTransaction();
+
+    const tipoMensaje = archivos.length > 0 ? 'archivo' : 'texto';
+
+    const [result] = await connection.query(
       `INSERT INTO mensajes
       (id_conversacion, id_remitente, tipo_mensaje, mensaje, leido)
-      VALUES (?, ?, 'texto', ?, 0)`,
-      [id, id_usuario, mensaje.trim()]
+      VALUES (?, ?, ?, ?, 0)`,
+      [id, id_usuario, tipoMensaje, mensaje?.trim() || null]
     );
+
+    for (const archivo of archivos) {
+      await connection.query(
+        `INSERT INTO mensaje_archivos
+        (id_mensaje, nombre_archivo, ruta_archivo, mime_type, tamano_bytes)
+        VALUES (?, ?, ?, ?, ?)`,
+        [
+          result.insertId,
+          archivo.originalname,
+          `/mensajes_archivos/${archivo.filename}`,
+          archivo.mimetype || null,
+          archivo.size || null
+        ]
+      );
+    }
+
+    await connection.commit();
 
     return res.status(201).json({
       ok: true,
       message: 'Mensaje enviado correctamente',
       data: {
-        id_mensaje: result.insertId
+        id_mensaje: result.insertId,
+        total_archivos: archivos.length
       }
     });
   } catch (error) {
+    await connection.rollback();
     console.error('Error en enviarMensaje:', error);
     return res.status(500).json({
       ok: false,
       message: 'Error al enviar mensaje'
     });
+  } finally {
+    connection.release();
   }
 };
 

@@ -15,7 +15,9 @@ export default function IngresosAbogadoPage() {
     total_pagos: 0,
     total_facturado: 0,
     total_comisiones: 0,
-    total_neto: 0
+    total_neto: 0,
+    total_retenido: 0,
+    saldo_pendiente: 0
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');

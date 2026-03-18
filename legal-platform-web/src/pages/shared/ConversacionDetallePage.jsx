@@ -11,6 +11,7 @@ import { Message } from 'primereact/message';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Button } from 'primereact/button';
 import { Divider } from 'primereact/divider';
+import { FileUpload } from 'primereact/fileupload';
 
 export default function ConversacionDetallePage() {
   const { id } = useParams();
@@ -24,6 +25,7 @@ export default function ConversacionDetallePage() {
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
   const [error, setError] = useState('');
+  const [archivos, setArchivos] = useState([]);
 
   useEffect(() => {
     obtenerMensajes();
@@ -47,14 +49,25 @@ export default function ConversacionDetallePage() {
 
   const enviarMensaje = async (e) => {
     e.preventDefault();
-    if (!mensaje.trim()) return;
+    if (!mensaje.trim() && archivos.length === 0) return;
 
     try {
       setSending(true);
-      await api.post(`/conversaciones/${id}/mensajes`, {
-        mensaje: mensaje.trim()
+      const formData = new FormData();
+      formData.append('mensaje', mensaje.trim());
+
+      archivos.forEach((archivo) => {
+        formData.append('archivos', archivo);
       });
+
+      await api.post(`/conversaciones/${id}/mensajes`, formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+
       setMensaje('');
+      setArchivos([]);
       await obtenerMensajes();
     } catch (err) {
       setError(err.response?.data?.message || 'Error al enviar mensaje');
@@ -120,7 +133,23 @@ export default function ConversacionDetallePage() {
                         <div className="text-sm text-600 mb-2">
                           {item.nombre} {item.apellido_paterno || ''} {item.apellido_materno || ''}
                         </div>
-                        <div>{item.mensaje}</div>
+                        {item.mensaje && <div>{item.mensaje}</div>}
+                        {(item.archivos || []).length > 0 && (
+                          <div className="mt-3 flex flex-column gap-2">
+                            {item.archivos.map((archivo) => (
+                              <a
+                                key={archivo.id_mensaje_archivo}
+                                href={`http://localhost:3003${archivo.ruta_archivo}`}
+                                target="_blank"
+                                rel="noreferrer"
+                                className="text-primary no-underline"
+                              >
+                                <i className="pi pi-paperclip mr-2" />
+                                {archivo.nombre_archivo}
+                              </a>
+                            ))}
+                          </div>
+                        )}
                         <div className="text-xs text-500 mt-2">{item.created_at}</div>
                       </div>
                     </div>
@@ -140,6 +169,20 @@ export default function ConversacionDetallePage() {
                   onChange={(e) => setMensaje(e.target.value)}
                   rows={4}
                   className="w-full"
+                />
+              </div>
+
+              <div className="col-12">
+                <label className="block mb-2">Adjuntar archivos</label>
+                <FileUpload
+                  mode="basic"
+                  name="archivos"
+                  customUpload
+                  auto={false}
+                  multiple
+                  chooseLabel={archivos.length > 0 ? `${archivos.length} archivo(s)` : 'Seleccionar archivos'}
+                  onSelect={(e) => setArchivos(e.files || [])}
+                  onClear={() => setArchivos([])}
                 />
               </div>
 

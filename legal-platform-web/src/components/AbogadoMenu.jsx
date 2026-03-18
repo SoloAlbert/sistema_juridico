@@ -26,6 +26,11 @@ export default function AbogadoMenu() {
       command: () => navigate('/abogado/casos-disponibles')
     },
     {
+      label: 'Mis Casos',
+      icon: 'pi pi-briefcase',
+      command: () => navigate('/abogado/mis-casos')
+    },
+    {
       label: 'Plantillas',
       icon: 'pi pi-file-edit',
       command: () => navigate('/abogado/plantillas')

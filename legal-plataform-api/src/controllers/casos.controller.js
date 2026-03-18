@@ -9,6 +9,15 @@ const generarFolioCaso = () => {
   return `CASO-${y}${m}${d}-${rand}`;
 };
 
+const obtenerIdAbogadoPorUsuario = async (id_usuario, connection = pool) => {
+  const [abogados] = await connection.query(
+    'SELECT id_abogado FROM abogados WHERE id_usuario = ? LIMIT 1',
+    [id_usuario]
+  );
+
+  return abogados.length > 0 ? abogados[0].id_abogado : null;
+};
+
 const crearCaso = async (req, res) => {
   try {
     const { id_usuario } = req.user;
@@ -227,6 +236,256 @@ const obtenerMiCasoCliente = async (req, res) => {
     );
 
     caso.postulaciones = postulaciones;
+
+    const [sugeridos] = await pool.query(
+      `SELECT
+        a.id_abogado,
+        u.nombre,
+        u.apellido_paterno,
+        u.apellido_materno,
+        u.email,
+        u.telefono,
+        u.foto_perfil,
+        a.nombre_despacho,
+        a.biografia_corta,
+        a.anos_experiencia,
+        a.modalidad_atencion,
+        a.precio_consulta_base,
+        a.moneda,
+        a.rating_promedio,
+        a.total_resenas,
+        a.total_casos,
+        COALESCE(av.badge_verificado, 0) AS badge_verificado,
+        av.estatus_general AS estatus_verificacion,
+        d.ciudad,
+        d.estado,
+        (
+          SELECT COUNT(*)
+          FROM abogado_disponibilidad ad
+          WHERE ad.id_abogado = a.id_abogado
+            AND ad.activo = 1
+            AND (
+              c.modalidad_preferida = 'indistinto'
+              OR ad.modalidad = c.modalidad_preferida
+              OR a.modalidad_atencion = 'ambas'
+            )
+        ) AS disponibilidad_activa,
+        (
+          (CASE WHEN ae.id_especialidad = c.id_especialidad THEN 40 ELSE 0 END) +
+          (CASE WHEN d.estado <=> c.estado_republica THEN 15 ELSE 0 END) +
+          (CASE WHEN d.ciudad <=> c.ciudad THEN 10 ELSE 0 END) +
+          (CASE WHEN COALESCE(av.badge_verificado, 0) = 1 THEN 15 ELSE 0 END) +
+          (LEAST(a.anos_experiencia, 20)) +
+          (LEAST(a.rating_promedio * 2, 10)) +
+          (CASE
+            WHEN c.modalidad_preferida = 'indistinto' THEN 5
+            WHEN a.modalidad_atencion = 'ambas' THEN 5
+            WHEN a.modalidad_atencion = c.modalidad_preferida THEN 5
+            ELSE 0
+          END) +
+          (CASE
+            WHEN c.presupuesto_max IS NULL OR c.presupuesto_max = 0 THEN 0
+            WHEN a.precio_consulta_base <= c.presupuesto_max THEN 5
+            ELSE 0
+          END)
+        ) AS puntaje_match
+      FROM casos c
+      INNER JOIN abogado_especialidad ae ON ae.id_especialidad = c.id_especialidad
+      INNER JOIN abogados a ON a.id_abogado = ae.id_abogado
+      INNER JOIN usuarios u ON u.id_usuario = a.id_usuario
+      LEFT JOIN abogado_verificaciones av ON av.id_abogado = a.id_abogado
+      LEFT JOIN direcciones d ON d.id_usuario = u.id_usuario
+      WHERE c.id_caso = ?
+        AND a.acepta_nuevos_casos = 1
+      GROUP BY
+        a.id_abogado,
+        u.nombre,
+        u.apellido_paterno,
+        u.apellido_materno,
+        u.email,
+        u.telefono,
+        u.foto_perfil,
+        a.nombre_despacho,
+        a.biografia_corta,
+        a.anos_experiencia,
+        a.modalidad_atencion,
+        a.precio_consulta_base,
+        a.moneda,
+        a.rating_promedio,
+        a.total_resenas,
+        a.total_casos,
+        av.badge_verificado,
+        av.estatus_general,
+        d.ciudad,
+        d.estado,
+        c.id_especialidad,
+        c.ciudad,
+        c.estado_republica,
+        c.modalidad_preferida,
+        c.presupuesto_max
+      ORDER BY puntaje_match DESC, a.rating_promedio DESC, a.total_resenas DESC, a.total_casos DESC
+      LIMIT 8`,
+      [id]
+    );
+
+    caso.abogados_sugeridos = sugeridos.map((item) => ({
+      ...item,
+      badge_verificado: !!item.badge_verificado,
+      puntaje_match: Number(item.puntaje_match || 0),
+      rating_promedio: Number(item.rating_promedio || 0),
+      total_resenas: Number(item.total_resenas || 0),
+      total_casos: Number(item.total_casos || 0),
+      anos_experiencia: Number(item.anos_experiencia || 0),
+      precio_consulta_base: Number(item.precio_consulta_base || 0),
+      disponibilidad_activa: Number(item.disponibilidad_activa || 0)
+    }));
+
+    const [pagos] = await pool.query(
+      `SELECT
+        id_pago,
+        estatus_pago,
+        fecha_pago,
+        created_at
+      FROM pagos
+      WHERE id_caso = ?
+      ORDER BY id_pago DESC`,
+      [id]
+    );
+
+    const [conversaciones] = await pool.query(
+      `SELECT
+        id_conversacion,
+        estado,
+        created_at
+      FROM conversaciones
+      WHERE id_caso = ?
+      ORDER BY id_conversacion DESC
+      LIMIT 1`,
+      [id]
+    );
+
+    const [citas] = await pool.query(
+      `SELECT
+        id_cita,
+        titulo,
+        modalidad,
+        estado,
+        fecha_inicio,
+        fecha_fin,
+        created_at
+      FROM citas
+      WHERE id_caso = ?
+      ORDER BY fecha_inicio DESC, id_cita DESC`,
+      [id]
+    );
+
+    const [documentos] = await pool.query(
+      `SELECT
+        id_documento_generado,
+        titulo_documento,
+        formato_salida,
+        estatus,
+        created_at
+      FROM documentos_generados
+      WHERE id_caso = ?
+      ORDER BY id_documento_generado DESC`,
+      [id]
+    );
+
+    const [archivosCaso] = await pool.query(
+      `SELECT
+        id_archivo,
+        nombre_archivo,
+        created_at
+      FROM caso_archivos
+      WHERE id_caso = ?
+      ORDER BY id_archivo DESC`,
+      [id]
+    );
+
+    const timeline = [
+      {
+        clave: 'caso_recibido',
+        titulo: 'Caso recibido',
+        descripcion: 'El cliente publico el caso en la plataforma',
+        estado: 'completado',
+        fecha: caso.created_at
+      },
+      {
+        clave: 'en_revision',
+        titulo: 'En revision',
+        descripcion: caso.postulaciones.length > 0
+          ? `Se recibieron ${caso.postulaciones.length} postulacion(es)`
+          : 'Esperando interes de abogados',
+        estado: caso.postulaciones.length > 0 ? 'completado' : 'pendiente',
+        fecha: caso.postulaciones.length > 0 ? caso.postulaciones[caso.postulaciones.length - 1].created_at : null
+      },
+      {
+        clave: 'en_proceso',
+        titulo: 'En proceso',
+        descripcion: pagos.length > 0
+          ? 'El caso ya tiene pago registrado y atencion activa'
+          : caso.estado === 'asignado'
+            ? 'Hay abogado asignado pendiente de pago'
+            : 'Pendiente de asignacion y pago',
+        estado: ['en_proceso', 'finalizado'].includes(caso.estado)
+          ? 'completado'
+          : caso.estado === 'asignado'
+            ? 'actual'
+            : 'pendiente',
+        fecha: pagos[0]?.fecha_pago || pagos[0]?.created_at || null
+      },
+      {
+        clave: 'esperando_documentos',
+        titulo: 'Esperando documentos',
+        descripcion: archivosCaso.length > 0
+          ? `${archivosCaso.length} archivo(s) cargado(s) por el cliente`
+          : 'Aun no hay documentos adjuntos del cliente',
+        estado: archivosCaso.length > 0 ? 'completado' : 'pendiente',
+        fecha: archivosCaso.length > 0 ? archivosCaso[0].created_at : null
+      },
+      {
+        clave: 'documento_generado',
+        titulo: 'Documento generado',
+        descripcion: documentos.length > 0
+          ? `${documentos.length} documento(s) generado(s) para el caso`
+          : 'Todavia no se genera un documento desde este caso',
+        estado: documentos.length > 0 ? 'completado' : 'pendiente',
+        fecha: documentos[0]?.created_at || null
+      },
+      {
+        clave: 'reunion_agendada',
+        titulo: 'Reunion agendada',
+        descripcion: citas.length > 0
+          ? `${citas.length} cita(s) registrada(s)`
+          : 'Sin reuniones programadas por ahora',
+        estado: citas.length > 0 ? 'completado' : 'pendiente',
+        fecha: citas[0]?.fecha_inicio || null
+      },
+      {
+        clave: 'cerrado',
+        titulo: 'Cerrado',
+        descripcion: caso.estado === 'finalizado'
+          ? 'El caso fue cerrado y marcado como finalizado'
+          : 'El caso aun sigue abierto',
+        estado: caso.estado === 'finalizado' ? 'completado' : 'pendiente',
+        fecha: caso.fecha_cierre || null
+      }
+    ];
+
+    caso.seguimiento = {
+      estado_actual: caso.estado,
+      conversacion_activa: conversaciones.length > 0,
+      total_postulaciones: caso.postulaciones.length,
+      total_archivos: archivosCaso.length,
+      total_documentos_generados: documentos.length,
+      total_citas: citas.length,
+      pagos,
+      conversacion: conversaciones[0] || null,
+      citas,
+      documentos,
+      timeline
+    };
 
     return res.json({
       ok: true,
@@ -592,6 +851,506 @@ const asignarAbogadoACaso = async (req, res) => {
   }
 };
 
+const listarMisCasosAbogado = async (req, res) => {
+  try {
+    const { id_usuario } = req.user;
+    const id_abogado = await obtenerIdAbogadoPorUsuario(id_usuario);
+
+    if (!id_abogado) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Abogado no encontrado'
+      });
+    }
+
+    const [rows] = await pool.query(
+      `SELECT
+        c.id_caso,
+        c.folio_caso,
+        c.titulo,
+        c.descripcion,
+        c.urgencia,
+        c.modalidad_preferida,
+        c.estado,
+        c.ciudad,
+        c.estado_republica,
+        c.created_at,
+        e.nombre AS especialidad,
+        ca.monto_acordado,
+        ca.estado_servicio,
+        ca.fecha_asignacion,
+        u.nombre AS cliente_nombre,
+        u.apellido_paterno AS cliente_apellido_paterno,
+        u.apellido_materno AS cliente_apellido_materno,
+        (
+          SELECT COUNT(*)
+          FROM caso_archivos car
+          WHERE car.id_caso = c.id_caso
+        ) AS total_archivos,
+        (
+          SELECT COUNT(*)
+          FROM documentos_generados dg
+          WHERE dg.id_caso = c.id_caso
+            AND dg.id_abogado = ca.id_abogado
+        ) AS total_documentos,
+        (
+          SELECT COUNT(*)
+          FROM citas ci
+          WHERE ci.id_caso = c.id_caso
+            AND ci.id_abogado = ca.id_abogado
+        ) AS total_citas
+      FROM caso_asignaciones ca
+      INNER JOIN casos c ON c.id_caso = ca.id_caso
+      INNER JOIN clientes cl ON cl.id_cliente = c.id_cliente
+      INNER JOIN usuarios u ON u.id_usuario = cl.id_usuario
+      INNER JOIN especialidades e ON e.id_especialidad = c.id_especialidad
+      WHERE ca.id_abogado = ?
+      ORDER BY c.updated_at DESC, c.id_caso DESC`,
+      [id_abogado]
+    );
+
+    return res.json({
+      ok: true,
+      data: rows
+    });
+  } catch (error) {
+    console.error('Error en listarMisCasosAbogado:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al obtener mis casos'
+    });
+  }
+};
+
+const obtenerMiCasoAbogado = async (req, res) => {
+  try {
+    const { id_usuario } = req.user;
+    const { id } = req.params;
+    const id_abogado = await obtenerIdAbogadoPorUsuario(id_usuario);
+
+    if (!id_abogado) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Abogado no encontrado'
+      });
+    }
+
+    const [casos] = await pool.query(
+      `SELECT
+        c.*,
+        e.nombre AS especialidad,
+        ca.id_asignacion,
+        ca.monto_acordado,
+        ca.porcentaje_comision,
+        ca.monto_comision,
+        ca.monto_neto_abogado,
+        ca.estado_servicio,
+        ca.fecha_asignacion,
+        cl.id_cliente,
+        u.nombre AS cliente_nombre,
+        u.apellido_paterno AS cliente_apellido_paterno,
+        u.apellido_materno AS cliente_apellido_materno,
+        u.email AS cliente_email,
+        u.telefono AS cliente_telefono
+      FROM caso_asignaciones ca
+      INNER JOIN casos c ON c.id_caso = ca.id_caso
+      INNER JOIN especialidades e ON e.id_especialidad = c.id_especialidad
+      INNER JOIN clientes cl ON cl.id_cliente = c.id_cliente
+      INNER JOIN usuarios u ON u.id_usuario = cl.id_usuario
+      WHERE ca.id_abogado = ?
+        AND c.id_caso = ?
+      LIMIT 1`,
+      [id_abogado, id]
+    );
+
+    if (casos.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Caso no encontrado'
+      });
+    }
+
+    const caso = casos[0];
+
+    const [archivos] = await pool.query(
+      `SELECT
+        id_archivo,
+        nombre_archivo,
+        ruta_archivo,
+        mime_type,
+        tamano_bytes,
+        created_at
+      FROM caso_archivos
+      WHERE id_caso = ?
+      ORDER BY id_archivo DESC`,
+      [id]
+    );
+
+    const [documentos] = await pool.query(
+      `SELECT
+        id_documento_generado,
+        titulo_documento,
+        ruta_archivo_generado,
+        formato_salida,
+        estatus,
+        created_at
+      FROM documentos_generados
+      WHERE id_caso = ?
+        AND id_abogado = ?
+      ORDER BY id_documento_generado DESC`,
+      [id, id_abogado]
+    );
+
+    const [pagos] = await pool.query(
+      `SELECT
+        id_pago,
+        monto_bruto,
+        porcentaje_comision,
+        monto_comision,
+        monto_neto_abogado,
+        moneda,
+        estatus_pago,
+        fecha_pago
+      FROM pagos
+      WHERE id_caso = ?
+        AND id_abogado = ?
+      ORDER BY id_pago DESC`,
+      [id, id_abogado]
+    );
+
+    const [citas] = await pool.query(
+      `SELECT
+        id_cita,
+        titulo,
+        descripcion,
+        fecha_inicio,
+        fecha_fin,
+        modalidad,
+        ubicacion,
+        link_reunion,
+        estado,
+        created_at
+      FROM citas
+      WHERE id_caso = ?
+        AND id_abogado = ?
+      ORDER BY fecha_inicio DESC, id_cita DESC`,
+      [id, id_abogado]
+    );
+
+    const [conversaciones] = await pool.query(
+      `SELECT id_conversacion, estado, created_at
+       FROM conversaciones
+       WHERE id_caso = ?
+         AND id_abogado = ?
+       LIMIT 1`,
+      [id, id_abogado]
+    );
+
+    const conversacion = conversaciones[0] || null;
+
+    let mensajesRecientes = [];
+    if (conversacion) {
+      const [mensajes] = await pool.query(
+        `SELECT
+          m.id_mensaje,
+          m.tipo_mensaje,
+          m.mensaje,
+          m.leido,
+          m.created_at,
+          u.nombre,
+          u.apellido_paterno,
+          u.apellido_materno
+        FROM mensajes m
+        INNER JOIN usuarios u ON u.id_usuario = m.id_remitente
+        WHERE m.id_conversacion = ?
+        ORDER BY m.id_mensaje DESC
+        LIMIT 8`,
+        [conversacion.id_conversacion]
+      );
+
+      mensajesRecientes = mensajes.reverse();
+    }
+
+    let notasPrivadas = [];
+    try {
+      const [notas] = await pool.query(
+        `SELECT
+          id_nota_privada,
+          nota,
+          created_at,
+          updated_at
+        FROM caso_notas_privadas
+        WHERE id_caso = ?
+          AND id_abogado = ?
+        ORDER BY id_nota_privada DESC`,
+        [id, id_abogado]
+      );
+      notasPrivadas = notas;
+    } catch (notesError) {
+      if (notesError.code !== 'ER_NO_SUCH_TABLE') {
+        throw notesError;
+      }
+    }
+
+    caso.archivos = archivos;
+    caso.documentos = documentos;
+    caso.pagos = pagos;
+    caso.citas = citas;
+    caso.conversacion = conversacion;
+    caso.mensajes_recientes = mensajesRecientes;
+    caso.notas_privadas = notasPrivadas;
+
+    const historial = [
+      {
+        clave: 'caso_creado',
+        titulo: 'Caso creado',
+        descripcion: 'El cliente registró el caso en la plataforma',
+        fecha: caso.created_at
+      },
+      {
+        clave: 'asignacion',
+        titulo: 'Caso asignado',
+        descripcion: `Asignado al abogado con monto acordado de $${Number(caso.monto_acordado || 0).toFixed(2)}`,
+        fecha: caso.fecha_asignacion
+      },
+      ...pagos.map((item) => ({
+        clave: `pago_${item.id_pago}`,
+        titulo: 'Pago registrado',
+        descripcion: `Pago ${item.estatus_pago} por $${Number(item.monto_bruto || 0).toFixed(2)}`,
+        fecha: item.fecha_pago || null
+      })),
+      ...citas.map((item) => ({
+        clave: `cita_${item.id_cita}`,
+        titulo: 'Cita registrada',
+        descripcion: `${item.titulo} · ${item.modalidad} · ${item.estado}`,
+        fecha: item.fecha_inicio || item.created_at
+      })),
+      ...documentos.map((item) => ({
+        clave: `documento_${item.id_documento_generado}`,
+        titulo: 'Documento generado',
+        descripcion: `${item.titulo_documento} · ${item.formato_salida} · ${item.estatus}`,
+        fecha: item.created_at
+      })),
+      ...notasPrivadas.map((item) => ({
+        clave: `nota_${item.id_nota_privada}`,
+        titulo: 'Nota privada',
+        descripcion: item.nota,
+        fecha: item.created_at
+      }))
+    ]
+      .filter((item) => item.fecha)
+      .sort((a, b) => new Date(b.fecha) - new Date(a.fecha));
+
+    caso.historial = historial;
+
+    return res.json({
+      ok: true,
+      data: caso
+    });
+  } catch (error) {
+    console.error('Error en obtenerMiCasoAbogado:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al obtener detalle del caso'
+    });
+  }
+};
+
+const actualizarEstadoCasoAbogado = async (req, res) => {
+  const connection = await pool.getConnection();
+
+  try {
+    const { id_usuario } = req.user;
+    const { id } = req.params;
+    const { estado } = req.body;
+    const id_abogado = await obtenerIdAbogadoPorUsuario(id_usuario, connection);
+
+    if (!id_abogado) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Abogado no encontrado'
+      });
+    }
+
+    const estadosPermitidos = ['en_proceso', 'cancelado'];
+
+    if (!estado || !estadosPermitidos.includes(estado)) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Estado inválido'
+      });
+    }
+
+    const [casos] = await connection.query(
+      `SELECT ca.id_asignacion
+       FROM caso_asignaciones ca
+       INNER JOIN casos c ON c.id_caso = ca.id_caso
+       WHERE ca.id_abogado = ?
+         AND c.id_caso = ?
+       LIMIT 1`,
+      [id_abogado, id]
+    );
+
+    if (casos.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Caso no encontrado'
+      });
+    }
+
+    await connection.beginTransaction();
+
+    await connection.query(
+      `UPDATE caso_asignaciones
+       SET estado_servicio = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id_asignacion = ?`,
+      [estado, casos[0].id_asignacion]
+    );
+
+    await connection.query(
+      `UPDATE casos
+       SET estado = ?,
+           updated_at = CURRENT_TIMESTAMP
+       WHERE id_caso = ?`,
+      [estado, id]
+    );
+
+    await connection.commit();
+
+    return res.json({
+      ok: true,
+      message: 'Estado del caso actualizado correctamente'
+    });
+  } catch (error) {
+    await connection.rollback();
+    console.error('Error en actualizarEstadoCasoAbogado:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al actualizar estado del caso'
+    });
+  } finally {
+    connection.release();
+  }
+};
+
+const solicitarDocumentosCasoAbogado = async (req, res) => {
+  try {
+    const { id_usuario } = req.user;
+    const { id } = req.params;
+    const { mensaje } = req.body;
+    const id_abogado = await obtenerIdAbogadoPorUsuario(id_usuario);
+
+    if (!id_abogado) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Abogado no encontrado'
+      });
+    }
+
+    if (!mensaje || !mensaje.trim()) {
+      return res.status(400).json({
+        ok: false,
+        message: 'El mensaje es obligatorio'
+      });
+    }
+
+    const [conversaciones] = await pool.query(
+      `SELECT id_conversacion
+       FROM conversaciones
+       WHERE id_caso = ?
+         AND id_abogado = ?
+       LIMIT 1`,
+      [id, id_abogado]
+    );
+
+    if (conversaciones.length === 0) {
+      return res.status(400).json({
+        ok: false,
+        message: 'Este caso aún no tiene conversación activa'
+      });
+    }
+
+    await pool.query(
+      `INSERT INTO mensajes
+      (id_conversacion, id_remitente, tipo_mensaje, mensaje, leido)
+      VALUES (?, ?, 'sistema', ?, 0)`,
+      [conversaciones[0].id_conversacion, id_usuario, mensaje.trim()]
+    );
+
+    return res.json({
+      ok: true,
+      message: 'Solicitud de documentos enviada al cliente'
+    });
+  } catch (error) {
+    console.error('Error en solicitarDocumentosCasoAbogado:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al solicitar documentos'
+    });
+  }
+};
+
+const agregarNotaPrivadaCasoAbogado = async (req, res) => {
+  try {
+    const { id_usuario } = req.user;
+    const { id } = req.params;
+    const { nota } = req.body;
+    const id_abogado = await obtenerIdAbogadoPorUsuario(id_usuario);
+
+    if (!id_abogado) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Abogado no encontrado'
+      });
+    }
+
+    if (!nota || !nota.trim()) {
+      return res.status(400).json({
+        ok: false,
+        message: 'La nota es obligatoria'
+      });
+    }
+
+    const [casos] = await pool.query(
+      `SELECT 1
+       FROM caso_asignaciones
+       WHERE id_caso = ?
+         AND id_abogado = ?
+       LIMIT 1`,
+      [id, id_abogado]
+    );
+
+    if (casos.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Caso no encontrado'
+      });
+    }
+
+    const [result] = await pool.query(
+      `INSERT INTO caso_notas_privadas
+      (id_caso, id_abogado, nota)
+      VALUES (?, ?, ?)`,
+      [id, id_abogado, nota.trim()]
+    );
+
+    return res.status(201).json({
+      ok: true,
+      message: 'Nota privada guardada correctamente',
+      data: {
+        id_nota_privada: result.insertId
+      }
+    });
+  } catch (error) {
+    console.error('Error en agregarNotaPrivadaCasoAbogado:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al guardar nota privada'
+    });
+  }
+};
+
 module.exports = {
   crearCaso,
   listarMisCasosCliente,
@@ -599,5 +1358,10 @@ module.exports = {
   listarCasosDisponiblesAbogado,
   obtenerCasoDisponibleAbogado,
   postularmeACaso,
-  asignarAbogadoACaso
+  asignarAbogadoACaso,
+  listarMisCasosAbogado,
+  obtenerMiCasoAbogado,
+  actualizarEstadoCasoAbogado,
+  solicitarDocumentosCasoAbogado,
+  agregarNotaPrivadaCasoAbogado
 };

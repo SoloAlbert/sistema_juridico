@@ -22,6 +22,7 @@ const adminPapeleraRoutes = require('./routes/adminPapelera.routes');
 const adminDashboardRoutes = require('./routes/adminDashboard.routes');
 const abogadoVerificacionRoutes = require('./routes/abogadoVerificacion.routes');
 const adminVerificacionesRoutes = require('./routes/adminVerificaciones.routes');
+const clienteCasosRoutes = require('./routes/clienteCasos.routes');
 
 const app = express();
 
@@ -46,6 +47,21 @@ app.use(
   express.static(path.join(__dirname, '../storage/plantillas_base'))
 );
 
+app.use(
+  '/casos_archivos',
+  express.static(path.join(__dirname, '../storage/casos_archivos'))
+);
+
+app.use(
+  '/mensajes_archivos',
+  express.static(path.join(__dirname, '../storage/mensajes_archivos'))
+);
+
+app.use(
+  '/perfiles_abogados',
+  express.static(path.join(__dirname, '../storage/perfiles_abogados'))
+);
+
 app.use('/api/auth', authRoutes);
 app.use('/api/especialidades', especialidadesRoutes);
 app.use('/api/abogados', abogadosRoutes);
@@ -64,6 +80,7 @@ app.use('/api/admin/papelera', adminPapeleraRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
 app.use('/api/abogado/verificacion', abogadoVerificacionRoutes);
 app.use('/api/admin/verificaciones', adminVerificacionesRoutes);
+app.use('/api/cliente/casos', clienteCasosRoutes);
 app.use('/verificaciones_abogados',express.static(path.join(__dirname, '../storage/verificaciones_abogados')));
 
 const PORT = process.env.PORT || 3003;

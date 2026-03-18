@@ -16,6 +16,7 @@ import { InputText } from 'primereact/inputtext';
 import { InputTextarea } from 'primereact/inputtextarea';
 import { Calendar } from 'primereact/calendar';
 import { Dropdown } from 'primereact/dropdown';
+import { Divider } from 'primereact/divider';
 
 export default function CitasPage() {
   const { user } = useAuth();
@@ -144,15 +145,52 @@ export default function CitasPage() {
     return <Tag value={row.estado} severity={severity} />;
   };
 
+  const modalidadBody = (row) => (
+    <div className="flex align-items-center gap-2 flex-wrap">
+      <Tag value={row.modalidad} severity="info" />
+      {row.link_reunion && (
+        <a
+          href={row.link_reunion}
+          target="_blank"
+          rel="noreferrer"
+          className="text-primary no-underline"
+        >
+          Unirse
+        </a>
+      )}
+    </div>
+  );
+
   const accionesBody = (row) => {
     return (
       <div className="flex gap-2 flex-wrap">
-        <Button size="small" label="Confirmar" outlined onClick={() => cambiarEstado(row.id_cita, 'confirmada')} />
-        <Button size="small" label="Completar" outlined severity="success" onClick={() => cambiarEstado(row.id_cita, 'completada')} />
-        <Button size="small" label="Cancelar" outlined severity="danger" onClick={() => cambiarEstado(row.id_cita, 'cancelada')} />
+        {row.estado !== 'confirmada' && row.estado !== 'completada' && row.estado !== 'cancelada' && (
+          <Button size="small" label="Confirmar" outlined onClick={() => cambiarEstado(row.id_cita, 'confirmada')} />
+        )}
+        {row.estado !== 'completada' && row.estado !== 'cancelada' && (
+          <Button size="small" label="Completar" outlined severity="success" onClick={() => cambiarEstado(row.id_cita, 'completada')} />
+        )}
+        {row.estado !== 'cancelada' && row.estado !== 'completada' && (
+          <Button size="small" label="Cancelar" outlined severity="danger" onClick={() => cambiarEstado(row.id_cita, 'cancelada')} />
+        )}
+        {row.link_reunion && (
+          <Button
+            size="small"
+            label="Entrar"
+            icon="pi pi-video"
+            outlined
+            onClick={() => window.open(row.link_reunion, '_blank', 'noopener,noreferrer')}
+          />
+        )}
       </div>
     );
   };
+
+  const proximasCitas = citas
+    .filter((item) => item.estado !== 'cancelada' && item.estado !== 'completada')
+    .slice()
+    .sort((a, b) => new Date(a.fecha_inicio) - new Date(b.fecha_inicio))
+    .slice(0, 3);
 
   return (
     <DashboardLayout>
@@ -162,6 +200,64 @@ export default function CitasPage() {
       {info && <Message severity="success" text={info} className="w-full mb-3" />}
 
       <Card title="Citas" className="shadow-2">
+        <div className="grid mb-3">
+          <div className="col-12 md:col-4">
+            <div className="surface-50 border-round p-3 h-full">
+              <div className="text-600 text-sm mb-2">Total citas</div>
+              <div className="text-2xl font-semibold">{citas.length}</div>
+            </div>
+          </div>
+          <div className="col-12 md:col-4">
+            <div className="surface-50 border-round p-3 h-full">
+              <div className="text-600 text-sm mb-2">Pendientes</div>
+              <div className="text-2xl font-semibold">
+                {citas.filter((item) => item.estado === 'programada' || item.estado === 'reprogramada').length}
+              </div>
+            </div>
+          </div>
+          <div className="col-12 md:col-4">
+            <div className="surface-50 border-round p-3 h-full">
+              <div className="text-600 text-sm mb-2">Confirmadas</div>
+              <div className="text-2xl font-semibold">
+                {citas.filter((item) => item.estado === 'confirmada').length}
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {proximasCitas.length > 0 && (
+          <>
+            <div className="mb-3">
+              <p className="font-semibold mb-2">Próximas citas</p>
+              <div className="grid">
+                {proximasCitas.map((item) => (
+                  <div key={item.id_cita} className="col-12 md:col-4">
+                    <div className="surface-50 border-round p-3 h-full">
+                      <div className="flex justify-content-between align-items-start gap-2 mb-2">
+                        <div className="font-semibold">{item.titulo}</div>
+                        {estadoBody(item)}
+                      </div>
+                      <div className="text-700 mb-2">{item.titulo_caso}</div>
+                      <small className="block text-600 mb-2">{item.fecha_inicio}</small>
+                      <small className="block text-600 mb-3">{item.modalidad}</small>
+                      {item.link_reunion && (
+                        <Button
+                          size="small"
+                          label="Entrar a reunión"
+                          icon="pi pi-video"
+                          outlined
+                          onClick={() => window.open(item.link_reunion, '_blank', 'noopener,noreferrer')}
+                        />
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+            <Divider />
+          </>
+        )}
+
         <div className="flex justify-content-end mb-3">
           <Button label="Nueva cita" icon="pi pi-plus" onClick={() => setVisible(true)} />
         </div>
@@ -177,7 +273,7 @@ export default function CitasPage() {
           <Column field="folio_caso" header="Folio" />
           <Column field="titulo" header="Título cita" />
           <Column field="titulo_caso" header="Caso" />
-          <Column field="modalidad" header="Modalidad" />
+          <Column header="Modalidad" body={modalidadBody} />
           <Column field="fecha_inicio" header="Inicio" />
           <Column field="fecha_fin" header="Fin" />
           <Column header="Estado" body={estadoBody} />

@@ -22,6 +22,37 @@ export default function PerfilPublicoAbogadoPage() {
     cargarPerfil();
   }, [id]);
 
+  const formatearTiempoRespuesta = (minutos) => {
+    if (minutos === null || minutos === undefined) {
+      return 'Sin datos todavia';
+    }
+
+    const totalMinutos = Number(minutos);
+
+    if (totalMinutos < 60) {
+      return `${totalMinutos} min`;
+    }
+
+    const horas = Math.floor(totalMinutos / 60);
+    const minutosRestantes = totalMinutos % 60;
+
+    if (horas < 24) {
+      return minutosRestantes > 0 ? `${horas} h ${minutosRestantes} min` : `${horas} h`;
+    }
+
+    const dias = Math.floor(horas / 24);
+    const horasRestantes = horas % 24;
+    return horasRestantes > 0 ? `${dias} d ${horasRestantes} h` : `${dias} d`;
+  };
+
+  const obtenerSeverityVerificacion = (estatus) => {
+    if (estatus === 'verificado') return 'success';
+    if (estatus === 'pendiente') return 'warning';
+    if (estatus === 'rechazado') return 'danger';
+    if (estatus === 'observado') return 'warning';
+    return 'info';
+  };
+
   const cargarPerfil = async () => {
     try {
       setLoading(true);
@@ -65,14 +96,27 @@ export default function PerfilPublicoAbogadoPage() {
                   {abogado.badge_verificado && (
                     <Tag value="Verificado" severity="success" className="ml-2" />
                   )}
+                  {abogado.estatus_verificacion && (
+                    <Tag
+                      value={`Estatus: ${abogado.estatus_verificacion}`}
+                      severity={obtenerSeverityVerificacion(abogado.estatus_verificacion)}
+                      className="ml-2"
+                    />
+                  )}
                 </div>
 
                 <p className="m-0 mb-2"><strong>Despacho:</strong> {abogado.nombre_despacho || 'Independiente'}</p>
                 <p className="m-0 mb-2"><strong>Cédula:</strong> {abogado.cedula_profesional || '-'}</p>
+                <p className="m-0 mb-2"><strong>Cedula validada:</strong> {abogado.cedula_verificada ? 'Si' : 'No'}</p>
                 <p className="m-0 mb-2"><strong>Universidad:</strong> {abogado.universidad || '-'}</p>
                 <p className="m-0 mb-2"><strong>Nivel:</strong> {abogado.nivel_academico || '-'}</p>
                 <p className="m-0 mb-2"><strong>Experiencia:</strong> {abogado.anos_experiencia} años</p>
+                <p className="m-0 mb-2"><strong>Casos atendidos:</strong> {abogado.total_casos || 0}</p>
+                <p className="m-0 mb-2"><strong>Tiempo de respuesta:</strong> {formatearTiempoRespuesta(abogado.tiempo_respuesta_promedio_minutos)}</p>
+                <p className="m-0 mb-2"><strong>Disponibilidad activa:</strong> {abogado.disponibilidad_activa || 0} horarios</p>
                 <p className="m-0 mb-2"><strong>Consulta base:</strong> ${Number(abogado.precio_consulta_base || 0).toFixed(2)} {abogado.moneda}</p>
+                <p className="m-0 mb-2"><strong>Consulta gratuita:</strong> {abogado.consulta_gratuita ? 'Si' : 'No'}</p>
+                <p className="m-0 mb-2"><strong>Acepta nuevos casos:</strong> {abogado.acepta_nuevos_casos ? 'Si' : 'No'}</p>
                 <p className="m-0 mb-2"><strong>Ubicación:</strong> {abogado.ciudad || '-'}, {abogado.estado || '-'}</p>
 
                 <Divider />

@@ -41,9 +41,15 @@ const obtenerResumenPagoCaso = async (req, res) => {
         ca.porcentaje_comision,
         ca.monto_comision,
         ca.monto_neto_abogado,
-        ca.estado_servicio
+        ca.estado_servicio,
+        a.nombre_despacho,
+        u.nombre AS abogado_nombre,
+        u.apellido_paterno AS abogado_apellido_paterno,
+        u.apellido_materno AS abogado_apellido_materno
       FROM casos c
       INNER JOIN caso_asignaciones ca ON ca.id_caso = c.id_caso
+      INNER JOIN abogados a ON a.id_abogado = ca.id_abogado
+      INNER JOIN usuarios u ON u.id_usuario = a.id_usuario
       WHERE c.id_caso = ?
       ${filtroUsuario}
       LIMIT 1`,
@@ -400,12 +406,13 @@ const listarMisIngresosAbogado = async (req, res) => {
     const [resumen] = await pool.query(
       `SELECT
         COUNT(*) AS total_pagos,
-        IFNULL(SUM(monto_bruto), 0) AS total_facturado,
-        IFNULL(SUM(monto_comision), 0) AS total_comisiones,
-        IFNULL(SUM(monto_neto_abogado), 0) AS total_neto
+        IFNULL(SUM(CASE WHEN estatus_pago = 'pagado' THEN monto_bruto ELSE 0 END), 0) AS total_facturado,
+        IFNULL(SUM(CASE WHEN estatus_pago = 'pagado' THEN monto_comision ELSE 0 END), 0) AS total_comisiones,
+        IFNULL(SUM(CASE WHEN estatus_pago = 'pagado' THEN monto_neto_abogado ELSE 0 END), 0) AS total_neto,
+        IFNULL(SUM(CASE WHEN estatus_pago IN ('pendiente', 'retenido') THEN monto_neto_abogado ELSE 0 END), 0) AS saldo_pendiente,
+        IFNULL(SUM(CASE WHEN estatus_pago = 'retenido' THEN monto_neto_abogado ELSE 0 END), 0) AS total_retenido
       FROM pagos
-      WHERE id_abogado = ?
-        AND estatus_pago = 'pagado'`,
+      WHERE id_abogado = ?`,
       [id_abogado]
     );
 

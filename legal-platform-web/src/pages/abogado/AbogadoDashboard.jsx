@@ -1,83 +1,230 @@
+import { useEffect, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
+import AbogadoMenu from '../../components/AbogadoMenu';
+import api from '../../api/axios';
+
 import { Card } from 'primereact/card';
 import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
-import { useNavigate } from 'react-router-dom';
-import AbogadoMenu from '../../components/AbogadoMenu';
+import { Message } from 'primereact/message';
+import { Divider } from 'primereact/divider';
 
 export default function AbogadoDashboard() {
   const navigate = useNavigate();
+
+  const [data, setData] = useState({
+    resumen: {
+      casos_nuevos: 0,
+      casos_asignados: 0,
+      mensajes_sin_leer: 0,
+      reuniones_proximas: 0,
+      documentos_recientes: 0,
+      ingresos: 0,
+      tareas_pendientes: 0
+    },
+    casos_nuevos: [],
+    casos_asignados: [],
+    proximas_reuniones: [],
+    documentos_recientes: [],
+    alertas: {
+      casos_pendientes_pago: 0
+    }
+  });
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+
+  useEffect(() => {
+    cargarDashboard();
+  }, []);
+
+  const cargarDashboard = async () => {
+    try {
+      setLoading(true);
+      setError('');
+      const { data } = await api.get('/abogados/dashboard');
+      setData(data.data || {});
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al cargar dashboard del abogado');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatoMoneda = (value) => `$${Number(value || 0).toFixed(2)}`;
+
+  const tarjetaResumen = (titulo, valor, severity = 'info', onClick = null) => (
+    <div className="col-12 md:col-6 lg:col-3">
+      <Card className="shadow-2 h-full">
+        <div className="flex justify-content-between align-items-start gap-2 mb-3">
+          <div>
+            <div className="text-600 text-sm mb-2">{titulo}</div>
+            <div className="text-3xl font-semibold">{valor}</div>
+          </div>
+          <Tag value={titulo} severity={severity} />
+        </div>
+        {onClick && (
+          <Button
+            label="Ver detalle"
+            outlined
+            size="small"
+            onClick={onClick}
+          />
+        )}
+      </Card>
+    </div>
+  );
 
   return (
     <DashboardLayout>
       <AbogadoMenu />
 
       <div className="mb-4">
-        <h1 className="m-0">Panel del Abogado</h1>
-        <p className="text-700">Gestiona tu perfil, explora casos, conversa con clientes y revisa ingresos.</p>
+        <h1 className="m-0">Panel del abogado</h1>
+        <p className="text-700">Casos, mensajes, citas, documentos e ingresos en un solo tablero.</p>
       </div>
 
-      <div className="grid">
-        <div className="col-12 md:col-6 lg:col-3">
-          <Card className="shadow-2">
-            <div className="flex justify-content-between align-items-center mb-3">
-              <h3 className="m-0">Mi Perfil</h3>
-              <Tag value="Profesional" severity="info" />
+      {error && <Message severity="error" text={error} className="w-full mb-3" />}
+
+      {loading ? (
+        <Card title="Cargando dashboard..." className="shadow-2" />
+      ) : (
+        <>
+          <div className="grid">
+            {tarjetaResumen('Casos nuevos', data.resumen?.casos_nuevos || 0, 'warning', () => navigate('/abogado/casos-disponibles'))}
+            {tarjetaResumen('Casos asignados', data.resumen?.casos_asignados || 0, 'info')}
+            {tarjetaResumen('Mensajes sin leer', data.resumen?.mensajes_sin_leer || 0, 'danger', () => navigate('/abogado/conversaciones'))}
+            {tarjetaResumen('Reuniones próximas', data.resumen?.reuniones_proximas || 0, 'success', () => navigate('/abogado/citas'))}
+            {tarjetaResumen('Documentos recientes', data.resumen?.documentos_recientes || 0, 'contrast', () => navigate('/abogado/documentos'))}
+            {tarjetaResumen('Ingresos', formatoMoneda(data.resumen?.ingresos || 0), 'success', () => navigate('/abogado/ingresos'))}
+            {tarjetaResumen('Tareas pendientes', data.resumen?.tareas_pendientes || 0, 'warning')}
+          </div>
+
+          {(data.alertas?.casos_pendientes_pago || 0) > 0 && (
+            <Message
+              severity="warn"
+              text={`Tienes ${data.alertas.casos_pendientes_pago} caso(s) asignado(s) pendiente(s) de pago del cliente.`}
+              className="w-full mb-4"
+            />
+          )}
+
+          <div className="grid">
+            <div className="col-12 lg:col-6">
+              <Card title="Casos nuevos" className="shadow-2 h-full">
+                {(data.casos_nuevos || []).length === 0 ? (
+                  <p>No hay casos nuevos para tus especialidades.</p>
+                ) : (
+                  data.casos_nuevos.map((item, index) => (
+                    <div key={item.id_caso}>
+                      <div className="flex justify-content-between align-items-start gap-3 flex-wrap">
+                        <div>
+                          <div className="font-semibold">{item.folio_caso}</div>
+                          <div className="text-700">{item.titulo}</div>
+                          <small className="text-600">
+                            {item.ciudad || '-'}, {item.estado_republica || '-'} · {item.urgencia}
+                          </small>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          <Tag value={item.urgencia} severity="warning" />
+                          <Button
+                            size="small"
+                            label="Ver"
+                            outlined
+                            onClick={() => navigate('/abogado/casos-disponibles')}
+                          />
+                        </div>
+                      </div>
+                      {index < data.casos_nuevos.length - 1 && <Divider />}
+                    </div>
+                  ))
+                )}
+              </Card>
             </div>
-            <p className="text-700">Edita tu información, experiencia y especialidades.</p>
-            <Button
-              label="Editar perfil"
-              icon="pi pi-user-edit"
-              className="mt-2"
-              onClick={() => navigate('/abogado/mi-perfil')}
-            />
-          </Card>
-        </div>
 
-        <div className="col-12 md:col-6 lg:col-3">
-          <Card className="shadow-2">
-            <div className="flex justify-content-between align-items-center mb-3">
-              <h3 className="m-0">Casos Disponibles</h3>
-              <Tag value="Marketplace" severity="success" />
+            <div className="col-12 lg:col-6">
+              <Card title="Casos asignados" className="shadow-2 h-full">
+                {(data.casos_asignados || []).length === 0 ? (
+                  <p>No tienes casos asignados activos.</p>
+                ) : (
+                  data.casos_asignados.map((item, index) => (
+                    <div key={item.id_caso}>
+                      <div className="flex justify-content-between align-items-start gap-3 flex-wrap">
+                        <div>
+                          <div className="font-semibold">{item.folio_caso}</div>
+                          <div className="text-700">{item.titulo}</div>
+                          <small className="text-600">
+                            {item.estado} · servicio {item.estado_servicio} · {formatoMoneda(item.monto_acordado)}
+                          </small>
+                        </div>
+                        <Tag value={item.estado} severity={item.estado === 'en_proceso' ? 'success' : 'info'} />
+                      </div>
+                      {index < data.casos_asignados.length - 1 && <Divider />}
+                    </div>
+                  ))
+                )}
+              </Card>
             </div>
-            <p className="text-700">Explora asuntos legales publicados por clientes.</p>
-            <Button
-              label="Ver casos"
-              icon="pi pi-search"
-              className="mt-2"
-              onClick={() => navigate('/abogado/casos-disponibles')}
-            />
-          </Card>
-        </div>
 
-        <div className="col-12 md:col-6 lg:col-3">
-          <Card className="shadow-2">
-            <h3 className="m-0 mb-3">Ingresos</h3>
-            <p className="text-700">Consulta pagos, comisiones y neto generado.</p>
-            <Button
-              label="Ver ingresos"
-              icon="pi pi-wallet"
-              className="mt-2"
-              outlined
-              onClick={() => navigate('/abogado/ingresos')}
-            />
-          </Card>
-        </div>
+            <div className="col-12 lg:col-6">
+              <Card title="Próximas reuniones" className="shadow-2 h-full">
+                {(data.proximas_reuniones || []).length === 0 ? (
+                  <p>No hay reuniones próximas.</p>
+                ) : (
+                  data.proximas_reuniones.map((item, index) => (
+                    <div key={item.id_cita}>
+                      <div className="flex justify-content-between align-items-start gap-3 flex-wrap">
+                        <div>
+                          <div className="font-semibold">{item.titulo}</div>
+                          <div className="text-700">{item.titulo_caso}</div>
+                          <small className="text-600">
+                            {item.fecha_inicio} · {item.modalidad}
+                          </small>
+                        </div>
+                        <div className="flex gap-2 flex-wrap">
+                          <Tag value={item.estado} severity="info" />
+                          {item.link_reunion && (
+                            <Button
+                              size="small"
+                              label="Entrar"
+                              icon="pi pi-video"
+                              outlined
+                              onClick={() => window.open(item.link_reunion, '_blank', 'noopener,noreferrer')}
+                            />
+                          )}
+                        </div>
+                      </div>
+                      {index < data.proximas_reuniones.length - 1 && <Divider />}
+                    </div>
+                  ))
+                )}
+              </Card>
+            </div>
 
-        <div className="col-12 md:col-6 lg:col-3">
-          <Card className="shadow-2">
-            <h3 className="m-0 mb-3">Conversaciones</h3>
-            <p className="text-700">Habla con tus clientes y gestiona citas.</p>
-            <Button
-              label="Abrir conversaciones"
-              icon="pi pi-comments"
-              className="mt-2"
-              outlined
-              onClick={() => navigate('/abogado/conversaciones')}
-            />
-          </Card>
-        </div>
-      </div>
+            <div className="col-12 lg:col-6">
+              <Card title="Documentos recientes" className="shadow-2 h-full">
+                {(data.documentos_recientes || []).length === 0 ? (
+                  <p>No hay documentos recientes.</p>
+                ) : (
+                  data.documentos_recientes.map((item, index) => (
+                    <div key={item.id_documento_generado}>
+                      <div className="flex justify-content-between align-items-start gap-3 flex-wrap">
+                        <div>
+                          <div className="font-semibold">{item.titulo_documento}</div>
+                          <small className="text-600">
+                            Caso #{item.id_caso} · {item.formato_salida} · {item.created_at}
+                          </small>
+                        </div>
+                        <Tag value={item.estatus} severity="success" />
+                      </div>
+                      {index < data.documentos_recientes.length - 1 && <Divider />}
+                    </div>
+                  ))
+                )}
+              </Card>
+            </div>
+          </div>
+        </>
+      )}
     </DashboardLayout>
   );
 }

@@ -41,6 +41,8 @@ export default function MisPagosPage() {
     return <Tag value={row.estatus_pago} severity={severity} />;
   };
 
+  const monedaBody = (value) => `$${Number(value || 0).toFixed(2)}`;
+
   return (
     <DashboardLayout>
       <ClienteMenu />
@@ -58,8 +60,9 @@ export default function MisPagosPage() {
         >
           <Column field="folio_caso" header="Folio" />
           <Column field="titulo" header="Caso" />
+          <Column header="Tipo pago" body={() => 'Pago completo'} />
           <Column field="metodo_pago" header="Método" />
-          <Column field="monto_bruto" header="Monto" />
+          <Column field="monto_bruto" header="Total pagado" body={(row) => monedaBody(row.monto_bruto)} />
           <Column field="monto_comision" header="Comisión" />
           <Column field="monto_neto_abogado" header="Neto abogado" />
           <Column header="Estado" body={estadoBody} />

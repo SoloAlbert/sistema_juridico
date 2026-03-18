@@ -96,6 +96,10 @@ export default function PagoCasoPage() {
     return <Tag value={estado} severity={severity} />;
   };
 
+  const nombreAbogado = resumen
+    ? `${resumen.abogado_nombre || ''} ${resumen.abogado_apellido_paterno || ''} ${resumen.abogado_apellido_materno || ''}`.trim()
+    : '';
+
   return (
     <DashboardLayout>
       <ClienteMenu />
@@ -114,9 +118,13 @@ export default function PagoCasoPage() {
                   <p><strong>Título:</strong> {resumen.titulo}</p>
                   <p><strong>Estado del caso:</strong> <Tag value={resumen.estado} severity="info" /></p>
                   <p><strong>Estado del servicio:</strong> {estadoBody(resumen.estado_servicio)}</p>
+                  <p><strong>Tipo de pago:</strong> Pago completo</p>
+                  <p><strong>Incluye:</strong> atencion del caso, mensajeria, citas y seguimiento dentro de la plataforma</p>
                 </div>
 
                 <div className="col-12 md:col-6">
+                  <p><strong>Abogado asignado:</strong> {nombreAbogado || '-'}</p>
+                  <p><strong>Despacho:</strong> {resumen.nombre_despacho || 'Independiente'}</p>
                   <p><strong>Monto acordado:</strong> ${Number(resumen.monto_acordado || 0).toFixed(2)}</p>
                   <p><strong>Comisión plataforma:</strong> {resumen.porcentaje_comision}%</p>
                   <p><strong>Monto comisión:</strong> ${Number(resumen.monto_comision || 0).toFixed(2)}</p>
@@ -162,6 +170,7 @@ export default function PagoCasoPage() {
 
           <div className="col-12 lg:col-5">
             <Card title="Resumen financiero" className="shadow-2">
+              <p className="mb-3">Se maneja como pago completo: no hay anticipo separado ni saldo pendiente posterior.</p>
               <p className="mb-3">Este pago se registrará en la plataforma y permitirá iniciar formalmente el caso.</p>
 
               <div className="surface-100 p-3 border-round">
@@ -169,15 +178,23 @@ export default function PagoCasoPage() {
                   <span>Monto del caso</span>
                   <strong>${Number(resumen.monto_acordado || 0).toFixed(2)}</strong>
                 </div>
+                <div className="flex justify-content-between mb-2">
+                  <span>Anticipo</span>
+                  <strong>$0.00</strong>
+                </div>
 
                 <div className="flex justify-content-between mb-2">
                   <span>Comisión plataforma</span>
                   <strong>${Number(resumen.monto_comision || 0).toFixed(2)}</strong>
                 </div>
 
-                <div className="flex justify-content-between">
+                <div className="flex justify-content-between mb-2">
                   <span>Recibe abogado</span>
                   <strong>${Number(resumen.monto_neto_abogado || 0).toFixed(2)}</strong>
+                </div>
+                <div className="flex justify-content-between">
+                  <span>Saldo pendiente</span>
+                  <strong>$0.00</strong>
                 </div>
               </div>
             </Card>

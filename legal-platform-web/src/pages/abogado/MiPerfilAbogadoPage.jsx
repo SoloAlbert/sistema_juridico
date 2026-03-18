@@ -13,6 +13,7 @@ import { Checkbox } from 'primereact/checkbox';
 import { Button } from 'primereact/button';
 import { Divider } from 'primereact/divider';
 import { Tag } from 'primereact/tag';
+import { FileUpload } from 'primereact/fileupload';
 
 export default function MiPerfilAbogadoPage() {
   const [loadingPerfil, setLoadingPerfil] = useState(true);
@@ -33,11 +34,14 @@ export default function MiPerfilAbogadoPage() {
     nombre_despacho: '',
     sitio_web: '',
     linkedin_url: '',
+    idiomas: '',
     modalidad_atencion: 'ambas',
     consulta_gratuita: false,
     precio_consulta_base: 0,
     moneda: 'MXN',
-    acepta_nuevos_casos: true
+    acepta_nuevos_casos: true,
+    estado: '',
+    ciudad: ''
   });
 
   const [metaPerfil, setMetaPerfil] = useState({
@@ -46,6 +50,7 @@ export default function MiPerfilAbogadoPage() {
     apellido_materno: '',
     email: '',
     telefono: '',
+    foto_perfil: '',
     estatus_verificacion: 'pendiente',
     rating_promedio: 0,
     total_resenas: 0,
@@ -86,11 +91,14 @@ export default function MiPerfilAbogadoPage() {
         nombre_despacho: p.nombre_despacho || '',
         sitio_web: p.sitio_web || '',
         linkedin_url: p.linkedin_url || '',
+        idiomas: p.idiomas || '',
         modalidad_atencion: p.modalidad_atencion || 'ambas',
         consulta_gratuita: !!p.consulta_gratuita,
         precio_consulta_base: Number(p.precio_consulta_base || 0),
         moneda: p.moneda || 'MXN',
-        acepta_nuevos_casos: !!p.acepta_nuevos_casos
+        acepta_nuevos_casos: !!p.acepta_nuevos_casos,
+        estado: p.estado || '',
+        ciudad: p.ciudad || ''
       });
 
       setMetaPerfil({
@@ -99,6 +107,7 @@ export default function MiPerfilAbogadoPage() {
         apellido_materno: p.apellido_materno || '',
         email: p.email || '',
         telefono: p.telefono || '',
+        foto_perfil: p.foto_perfil || '',
         estatus_verificacion: p.estatus_verificacion || 'pendiente',
         rating_promedio: Number(p.rating_promedio || 0),
         total_resenas: Number(p.total_resenas || 0),
@@ -271,6 +280,28 @@ export default function MiPerfilAbogadoPage() {
       currency: 'MXN'
     }).format(Number(valor || 0));
 
+  const subirFoto = async (e) => {
+    const archivo = e.files?.[0];
+    if (!archivo) return;
+
+    const formData = new FormData();
+    formData.append('foto', archivo);
+
+    try {
+      setError('');
+      setSuccess('');
+      await api.post('/abogados/mi-perfil/foto', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
+      });
+      setSuccess('Foto actualizada correctamente');
+      await obtenerPerfil();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al subir foto');
+    }
+  };
+
   return (
     <DashboardLayout>
       <AbogadoMenu />
@@ -285,11 +316,39 @@ export default function MiPerfilAbogadoPage() {
               <p>Cargando perfil...</p>
             ) : (
               <>
+                <div className="mb-3">
+                  {metaPerfil.foto_perfil ? (
+                    <img
+                      src={`http://localhost:3003${metaPerfil.foto_perfil}`}
+                      alt="Foto de perfil"
+                      style={{ width: '96px', height: '96px', objectFit: 'cover', borderRadius: '50%' }}
+                    />
+                  ) : (
+                    <div
+                      className="surface-200 flex align-items-center justify-content-center"
+                      style={{ width: '96px', height: '96px', borderRadius: '50%' }}
+                    >
+                      <i className="pi pi-user text-2xl" />
+                    </div>
+                  )}
+                </div>
+
                 <h2 className="mb-2">
                   {metaPerfil.nombre} {metaPerfil.apellido_paterno} {metaPerfil.apellido_materno}
                 </h2>
                 <p className="m-0 mb-2">{metaPerfil.email}</p>
                 <p className="m-0 mb-3">{metaPerfil.telefono || '-'}</p>
+
+                <FileUpload
+                  mode="basic"
+                  name="foto"
+                  customUpload
+                  auto
+                  accept="image/*"
+                  chooseLabel="Cambiar foto"
+                  uploadHandler={subirFoto}
+                  className="mb-3"
+                />
 
                 <div className="mb-3">
                   <Tag
@@ -405,6 +464,16 @@ export default function MiPerfilAbogadoPage() {
               </div>
 
               <div className="col-12 md:col-6">
+                <label className="block mb-2">Idiomas</label>
+                <InputText
+                  value={perfil.idiomas}
+                  onChange={(e) => handlePerfilChange('idiomas', e.target.value)}
+                  className="w-full"
+                  placeholder="Ej. Espanol, Ingles"
+                />
+              </div>
+
+              <div className="col-12 md:col-6">
                 <label className="block mb-2">Modalidad de atención</label>
                 <Dropdown
                   value={perfil.modalidad_atencion}
@@ -431,6 +500,24 @@ export default function MiPerfilAbogadoPage() {
                 <InputText
                   value={perfil.moneda}
                   onChange={(e) => handlePerfilChange('moneda', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="col-12 md:col-6">
+                <label className="block mb-2">Estado</label>
+                <InputText
+                  value={perfil.estado}
+                  onChange={(e) => handlePerfilChange('estado', e.target.value)}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="col-12 md:col-6">
+                <label className="block mb-2">Ciudad</label>
+                <InputText
+                  value={perfil.ciudad}
+                  onChange={(e) => handlePerfilChange('ciudad', e.target.value)}
                   className="w-full"
                 />
               </div>
