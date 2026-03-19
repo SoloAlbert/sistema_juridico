@@ -78,6 +78,14 @@ export default function AdminDashboard() {
 
             <div className="col-12 md:col-6 lg:col-3">
               <Card className="shadow-2 h-full">
+                <h3 className="mt-0">Abogados en vivo</h3>
+                <h1 className="mb-2">{data.kpis.total_abogados_en_vivo}</h1>
+                <small className="text-600">Con ultimo acceso en los ultimos 10 minutos</small>
+              </Card>
+            </div>
+
+            <div className="col-12 md:col-6 lg:col-3">
+              <Card className="shadow-2 h-full">
                 <h3 className="mt-0">Plantillas</h3>
                 <h1 className="mb-2">{data.kpis.total_plantillas}</h1>
                 <small className="text-600">Total registradas</small>

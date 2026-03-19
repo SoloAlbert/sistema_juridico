@@ -1,5 +1,4 @@
 import { Link, useNavigate } from 'react-router-dom';
-import { Menubar } from 'primereact/menubar';
 import { Button } from 'primereact/button';
 import { Tag } from 'primereact/tag';
 import { useAuth } from '../context/AuthContext';
@@ -8,66 +7,27 @@ export default function Navbar() {
   const { isAuthenticated, user, logout } = useAuth();
   const navigate = useNavigate();
 
-  const items = [
-    {
-      label: 'Inicio',
-      icon: 'pi pi-home',
-      command: () => navigate('/')
-    }
-  ];
+  const panelPath = user?.role === 'abogado'
+    ? '/abogado'
+    : user?.role === 'cliente'
+      ? '/cliente'
+      : user?.role === 'admin'
+        ? '/admin'
+        : '/';
 
-  if (isAuthenticated && user?.role === 'cliente') {
-    items.push({
-      label: 'Panel Cliente',
-      icon: 'pi pi-user',
-      command: () => navigate('/cliente')
-    });
-  }
+  return (
+    <header className="site-header">
+      <div className="site-header__inner">
+        <Link to={isAuthenticated ? panelPath : '/'} className="site-brand">
+          <span className="site-brand__mark">LP</span>
+          <span>
+            <span className="site-brand__title">JuridicoService</span>
+            <span className="site-brand__subtitle">Servicios legales con criterio y confianza</span>
+          </span>
+        </Link>
 
-  if (isAuthenticated && user?.role === 'abogado') {
-    items.push({
-      label: 'Panel Abogado',
-      icon: 'pi pi-briefcase',
-      command: () => navigate('/abogado')
-    });
-  }
-
-  const start = (
-    <Link to="/" className="text-xl font-bold no-underline text-900">
-      Legal Platform
-    </Link>
+        
+      </div>
+    </header>
   );
-
-  const end = !isAuthenticated ? (
-    <div className="flex gap-2">
-      <Button
-        label="Login"
-        icon="pi pi-sign-in"
-        outlined
-        onClick={() => navigate('/login')}
-      />
-      <Button
-        label="Registro"
-        icon="pi pi-user-plus"
-        onClick={() => navigate('/register')}
-      />
-    </div>
-  ) : (
-    <div className="flex align-items-center gap-3">
-      <span className="font-medium">{user?.nombre}</span>
-      <Tag value={user?.role} severity={user?.role === 'abogado' ? 'info' : 'success'} />
-      <Button
-        label="Salir"
-        icon="pi pi-sign-out"
-        severity="danger"
-        outlined
-        onClick={() => {
-          logout();
-          navigate('/login');
-        }}
-      />
-    </div>
-  );
-
-  return <Menubar model={items} start={start} end={end} />;
 }

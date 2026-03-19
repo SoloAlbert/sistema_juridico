@@ -1,0 +1,21 @@
+ALTER TABLE abogado_verificaciones
+  ADD COLUMN datos_nombre VARCHAR(100) NULL AFTER observaciones_generales,
+  ADD COLUMN datos_apellido_paterno VARCHAR(100) NULL AFTER datos_nombre,
+  ADD COLUMN datos_apellido_materno VARCHAR(100) NULL AFTER datos_apellido_paterno,
+  ADD COLUMN curp VARCHAR(18) NULL AFTER datos_apellido_materno,
+  ADD COLUMN clave_elector VARCHAR(30) NULL AFTER curp,
+  ADD COLUMN numero_cedula_reportada VARCHAR(30) NULL AFTER clave_elector,
+  ADD COLUMN validacion_datos_estatus ENUM('sin_datos','pendiente','coincide','inconsistente') NOT NULL DEFAULT 'sin_datos' AFTER numero_cedula_reportada,
+  ADD COLUMN validacion_datos_detalle TEXT NULL AFTER validacion_datos_estatus,
+  ADD COLUMN coincidencia_nombre TINYINT(1) NULL AFTER validacion_datos_detalle,
+  ADD COLUMN coincidencia_apellidos TINYINT(1) NULL AFTER coincidencia_nombre,
+  ADD COLUMN coincidencia_cedula TINYINT(1) NULL AFTER coincidencia_apellidos,
+  ADD COLUMN datos_validados_at DATETIME NULL AFTER coincidencia_cedula,
+  ADD COLUMN cedula_validacion_estatus ENUM('sin_validar','pendiente','valida','inconsistente','no_encontrada') NOT NULL DEFAULT 'sin_validar' AFTER datos_validados_at,
+  ADD COLUMN cedula_validacion_fuente VARCHAR(120) NULL AFTER cedula_validacion_estatus,
+  ADD COLUMN cedula_validacion_nombre VARCHAR(255) NULL AFTER cedula_validacion_fuente,
+  ADD COLUMN cedula_validacion_institucion VARCHAR(255) NULL AFTER cedula_validacion_nombre,
+  ADD COLUMN cedula_validacion_carrera VARCHAR(255) NULL AFTER cedula_validacion_institucion,
+  ADD COLUMN cedula_validacion_anio VARCHAR(10) NULL AFTER cedula_validacion_carrera,
+  ADD COLUMN cedula_validacion_detalle TEXT NULL AFTER cedula_validacion_anio;
+

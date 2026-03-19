@@ -50,6 +50,20 @@ export default function ClienteDashboard() {
 
         <div className="col-12 md:col-6 lg:col-3">
           <Card className="shadow-2">
+            <h3 className="m-0 mb-3">Buscar Abogados</h3>
+            <p className="text-700">Explora perfiles verificados y compara experiencia antes de contratar.</p>
+            <Button
+              label="Ir al directorio"
+              icon="pi pi-search"
+              className="mt-2"
+              outlined
+              onClick={() => navigate('/abogados')}
+            />
+          </Card>
+        </div>
+
+        <div className="col-12 md:col-6 lg:col-3">
+          <Card className="shadow-2">
             <h3 className="m-0 mb-3">Mis Pagos</h3>
             <p className="text-700">Revisa pagos registrados y estatus financieros.</p>
             <Button

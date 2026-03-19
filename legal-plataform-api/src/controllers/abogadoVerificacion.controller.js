@@ -1,5 +1,9 @@
 const { pool } = require('../config/db');
-const { asegurarRegistroVerificacion, recalcularEstadoVerificacion } = require('../services/abogadoVerificacion.service');
+const {
+  asegurarRegistroVerificacion,
+  recalcularEstadoVerificacion,
+  guardarDatosVerificacion
+} = require('../services/abogadoVerificacion.service');
 
 const obtenerMiVerificacion = async (req, res) => {
   try {
@@ -22,7 +26,8 @@ const obtenerMiVerificacion = async (req, res) => {
 
     const id_abogado = abogados[0].id_abogado;
 
-    const verificacion = await asegurarRegistroVerificacion(id_abogado);
+    await asegurarRegistroVerificacion(id_abogado);
+    const verificacion = await recalcularEstadoVerificacion(id_abogado);
 
     const [documentos] = await pool.query(
       `SELECT
@@ -144,7 +149,45 @@ const subirDocumentoVerificacion = async (req, res) => {
   }
 };
 
+const actualizarDatosMiVerificacion = async (req, res) => {
+  try {
+    const { id_usuario } = req.user;
+
+    const [abogados] = await pool.query(
+      `SELECT id_abogado
+       FROM abogados
+       WHERE id_usuario = ?
+       LIMIT 1`,
+      [id_usuario]
+    );
+
+    if (abogados.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Abogado no encontrado'
+      });
+    }
+
+    const verificacion = await guardarDatosVerificacion(abogados[0].id_abogado, req.body || {});
+
+    return res.json({
+      ok: true,
+      message: 'Datos de validacion guardados correctamente',
+      data: {
+        verificacion
+      }
+    });
+  } catch (error) {
+    console.error('Error en actualizarDatosMiVerificacion:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al guardar datos de validacion'
+    });
+  }
+};
+
 module.exports = {
   obtenerMiVerificacion,
-  subirDocumentoVerificacion
+  subirDocumentoVerificacion,
+  actualizarDatosMiVerificacion
 };

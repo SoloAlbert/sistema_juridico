@@ -58,7 +58,9 @@ export default function RegisterPage() {
   };
 
   return (
-    <Card title="Crear cuenta" className="shadow-4">
+    <Card title="Crear cuenta" className="auth-card shadow-4">
+      <p className="auth-card__lead">Empieza con una cuenta clara, segura y profesional.</p>
+
       <form onSubmit={handleSubmit} className="flex flex-column gap-3">
         <InputText
           value={form.nombre}
@@ -81,19 +83,19 @@ export default function RegisterPage() {
         <InputText
           value={form.email}
           onChange={(e) => handleChange('email', e.target.value)}
-          placeholder="Correo electrónico"
+          placeholder="Correo electronico"
         />
 
         <InputText
           value={form.telefono}
           onChange={(e) => handleChange('telefono', e.target.value)}
-          placeholder="Teléfono"
+          placeholder="Telefono"
         />
 
         <Password
           value={form.password}
           onChange={(e) => handleChange('password', e.target.value)}
-          placeholder="Contraseña"
+          placeholder="Contrasena"
           toggleMask
           feedback={false}
           className="w-full"

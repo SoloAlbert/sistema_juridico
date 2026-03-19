@@ -1,5 +1,8 @@
 const { pool } = require('../config/db');
-const { recalcularEstadoVerificacion } = require('../services/abogadoVerificacion.service');
+const {
+  recalcularEstadoVerificacion,
+  guardarValidacionCedulaAdmin
+} = require('../services/abogadoVerificacion.service');
 const { registrarBitacoraAdmin } = require('../services/adminBitacora.service');
 const { crearNotificacion } = require('../services/notificaciones.service');
 
@@ -14,6 +17,8 @@ const listarVerificacionesAdmin = async (req, res) => {
         av.estatus_general,
         av.badge_verificado,
         av.porcentaje_completado,
+        av.validacion_datos_estatus,
+        av.cedula_validacion_estatus,
         av.observaciones_generales,
         av.reviewed_at,
         u.nombre,
@@ -42,6 +47,8 @@ const listarVerificacionesAdmin = async (req, res) => {
 const obtenerVerificacionAdminPorAbogado = async (req, res) => {
   try {
     const { idAbogado } = req.params;
+
+    await recalcularEstadoVerificacion(Number(idAbogado));
 
     const [verificaciones] = await pool.query(
       `SELECT
@@ -206,8 +213,99 @@ const revisarDocumentoVerificacionAdmin = async (req, res) => {
   }
 };
 
+const actualizarValidacionCedulaAdmin = async (req, res) => {
+  try {
+    const { id_usuario } = req.user;
+    const { idAbogado } = req.params;
+    const {
+      cedula_validacion_estatus,
+      cedula_validacion_fuente,
+      cedula_validacion_nombre,
+      cedula_validacion_institucion,
+      cedula_validacion_carrera,
+      cedula_validacion_anio,
+      cedula_validacion_detalle
+    } = req.body || {};
+
+    const permitidos = ['sin_validar', 'pendiente', 'valida', 'inconsistente', 'no_encontrada'];
+    if (!permitidos.includes(cedula_validacion_estatus)) {
+      return res.status(400).json({
+        ok: false,
+        message: 'cedula_validacion_estatus invalido'
+      });
+    }
+
+    const [abogados] = await pool.query(
+      `SELECT id_abogado
+       FROM abogados
+       WHERE id_abogado = ?
+       LIMIT 1`,
+      [idAbogado]
+    );
+
+    if (abogados.length === 0) {
+      return res.status(404).json({
+        ok: false,
+        message: 'Abogado no encontrado'
+      });
+    }
+
+    const resumen = await guardarValidacionCedulaAdmin(Number(idAbogado), {
+      cedula_validacion_estatus,
+      cedula_validacion_fuente,
+      cedula_validacion_nombre,
+      cedula_validacion_institucion,
+      cedula_validacion_carrera,
+      cedula_validacion_anio,
+      cedula_validacion_detalle
+    });
+
+    await pool.query(
+      `UPDATE abogado_verificaciones
+       SET revisado_por = ?, reviewed_at = NOW()
+       WHERE id_abogado = ?`,
+      [id_usuario, idAbogado]
+    );
+
+    await registrarBitacoraAdmin({
+      id_usuario,
+      modulo: 'verificaciones_abogados',
+      entidad: 'abogado_verificaciones',
+      id_entidad: idAbogado,
+      accion: 'validar_cedula',
+      descripcion: `Actualizo la validacion de cedula del abogado ${idAbogado}`,
+      datos_antes: null,
+      datos_despues: {
+        cedula_validacion_estatus,
+        cedula_validacion_fuente,
+        cedula_validacion_nombre,
+        cedula_validacion_institucion,
+        cedula_validacion_carrera,
+        cedula_validacion_anio,
+        cedula_validacion_detalle
+      },
+      req
+    });
+
+    return res.json({
+      ok: true,
+      message: 'Validacion de cedula guardada correctamente',
+      data: {
+        verificacion: resumen
+      }
+    });
+  } catch (error) {
+    console.error('Error en actualizarValidacionCedulaAdmin:', error);
+    return res.status(500).json({
+      ok: false,
+      message: 'Error al guardar validacion de cedula'
+    });
+  }
+};
+
 module.exports = {
   listarVerificacionesAdmin,
   obtenerVerificacionAdminPorAbogado,
-  revisarDocumentoVerificacionAdmin
+  revisarDocumentoVerificacionAdmin,
+  actualizarValidacionCedulaAdmin
 };

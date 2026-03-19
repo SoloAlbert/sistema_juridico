@@ -11,6 +11,7 @@ import { Tag } from 'primereact/tag';
 import { Button } from 'primereact/button';
 import { Message } from 'primereact/message';
 import { Dropdown } from 'primereact/dropdown';
+import { Dialog } from 'primereact/dialog';
 
 export default function CasosDisponiblesPage() {
   const navigate = useNavigate();
@@ -19,6 +20,8 @@ export default function CasosDisponiblesPage() {
   const [especialidades, setEspecialidades] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [bloqueoVisible, setBloqueoVisible] = useState(false);
+  const [mensajeBloqueo, setMensajeBloqueo] = useState('');
 
   const [filtros, setFiltros] = useState({
     id_especialidad: null,
@@ -71,7 +74,14 @@ export default function CasosDisponiblesPage() {
       const { data } = await api.get('/casos/disponibles', { params });
       setCasos(data.data);
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al obtener casos disponibles');
+      const message = err.response?.data?.message || 'Error al obtener casos disponibles';
+      if (err.response?.status === 403) {
+        setMensajeBloqueo(message);
+        setBloqueoVisible(true);
+        setCasos([]);
+      } else {
+        setError(message);
+      }
     } finally {
       setLoading(false);
     }
@@ -203,6 +213,21 @@ export default function CasosDisponiblesPage() {
           <Column header="Acciones" body={accionesBody} />
         </DataTable>
       </Card>
+
+      <Dialog
+        header="Verificacion profesional requerida"
+        visible={bloqueoVisible}
+        onHide={() => setBloqueoVisible(false)}
+        style={{ width: '34rem' }}
+      >
+        <div className="text-700 line-height-3">
+          {mensajeBloqueo || 'Para ver casos primero verifica que eres un abogado autentico.'}
+        </div>
+        <div className="flex gap-2 mt-4 justify-content-end">
+          <Button label="Ir a mi verificacion" onClick={() => navigate('/abogado/verificacion')} />
+          <Button label="Cerrar" outlined onClick={() => setBloqueoVisible(false)} />
+        </div>
+      </Dialog>
     </DashboardLayout>
   );
 }

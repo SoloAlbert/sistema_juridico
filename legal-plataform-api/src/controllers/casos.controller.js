@@ -19,6 +19,44 @@ const obtenerIdAbogadoPorUsuario = async (id_usuario, connection = pool) => {
   return abogados.length > 0 ? abogados[0].id_abogado : null;
 };
 
+const asegurarAbogadoVerificadoParaLitigar = async (id_usuario, connection = pool) => {
+  const [rows] = await connection.query(
+    `SELECT
+      a.id_abogado,
+      a.estatus_verificacion,
+      COALESCE(av.badge_verificado, 0) AS badge_verificado
+     FROM abogados a
+     LEFT JOIN abogado_verificaciones av ON av.id_abogado = a.id_abogado
+     WHERE a.id_usuario = ?
+     LIMIT 1`,
+    [id_usuario]
+  );
+
+  if (rows.length === 0) {
+    return {
+      ok: false,
+      status: 404,
+      message: 'Abogado no encontrado'
+    };
+  }
+
+  const abogado = rows[0];
+  const permitido = abogado.estatus_verificacion === 'verificado' && Number(abogado.badge_verificado) === 1;
+
+  if (!permitido) {
+    return {
+      ok: false,
+      status: 403,
+      message: 'Para ver y tomar casos primero verifica que eres un abogado autentico. Completa tu verificacion profesional.'
+    };
+  }
+
+  return {
+    ok: true,
+    id_abogado: abogado.id_abogado
+  };
+};
+
 const crearCaso = async (req, res) => {
   try {
     const { id_usuario } = req.user;
@@ -506,19 +544,15 @@ const listarCasosDisponiblesAbogado = async (req, res) => {
     const { id_usuario } = req.user;
     const { id_especialidad, urgencia, modalidad } = req.query;
 
-    const [abogados] = await pool.query(
-      'SELECT id_abogado FROM abogados WHERE id_usuario = ? LIMIT 1',
-      [id_usuario]
-    );
-
-    if (abogados.length === 0) {
-      return res.status(404).json({
+    const acceso = await asegurarAbogadoVerificadoParaLitigar(id_usuario);
+    if (!acceso.ok) {
+      return res.status(acceso.status).json({
         ok: false,
-        message: 'Abogado no encontrado'
+        message: acceso.message
       });
     }
 
-    const id_abogado = abogados[0].id_abogado;
+    const id_abogado = acceso.id_abogado;
 
     let sql = `
       SELECT
@@ -587,19 +621,15 @@ const obtenerCasoDisponibleAbogado = async (req, res) => {
     const { id_usuario } = req.user;
     const { id } = req.params;
 
-    const [abogados] = await pool.query(
-      'SELECT id_abogado FROM abogados WHERE id_usuario = ? LIMIT 1',
-      [id_usuario]
-    );
-
-    if (abogados.length === 0) {
-      return res.status(404).json({
+    const acceso = await asegurarAbogadoVerificadoParaLitigar(id_usuario);
+    if (!acceso.ok) {
+      return res.status(acceso.status).json({
         ok: false,
-        message: 'Abogado no encontrado'
+        message: acceso.message
       });
     }
 
-    const id_abogado = abogados[0].id_abogado;
+    const id_abogado = acceso.id_abogado;
 
     const [rows] = await pool.query(
       `SELECT
@@ -658,19 +688,15 @@ const postularmeACaso = async (req, res) => {
     const { id } = req.params;
     const { mensaje_propuesta, monto_propuesto, tiempo_estimado_dias } = req.body;
 
-    const [abogados] = await pool.query(
-      'SELECT id_abogado FROM abogados WHERE id_usuario = ? LIMIT 1',
-      [id_usuario]
-    );
-
-    if (abogados.length === 0) {
-      return res.status(404).json({
+    const acceso = await asegurarAbogadoVerificadoParaLitigar(id_usuario);
+    if (!acceso.ok) {
+      return res.status(acceso.status).json({
         ok: false,
-        message: 'Abogado no encontrado'
+        message: acceso.message
       });
     }
 
-    const id_abogado = abogados[0].id_abogado;
+    const id_abogado = acceso.id_abogado;
 
     const [casos] = await pool.query(
       'SELECT id_caso, estado FROM casos WHERE id_caso = ? LIMIT 1',
@@ -795,7 +821,7 @@ const asignarAbogadoACaso = async (req, res) => {
       });
     }
 
-    const pct = Number(porcentaje_comision || 3);
+    const pct = 10;
     const monto = Number(monto_acordado);
     const monto_comision = Number(((monto * pct) / 100).toFixed(2));
     const monto_neto_abogado = Number((monto - monto_comision).toFixed(2));

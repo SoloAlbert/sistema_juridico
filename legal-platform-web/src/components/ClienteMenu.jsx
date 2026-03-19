@@ -16,6 +16,11 @@ export default function ClienteMenu() {
       command: () => navigate('/cliente/crear-caso')
     },
     {
+      label: 'Buscar Abogados',
+      icon: 'pi pi-search',
+      command: () => navigate('/abogados')
+    },
+    {
       label: 'Mis Casos',
       icon: 'pi pi-briefcase',
       command: () => navigate('/cliente/mis-casos')

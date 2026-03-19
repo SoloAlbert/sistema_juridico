@@ -16,7 +16,8 @@ const obtenerDashboardAdmin = async (req, res) => {
       documentos30dRes,
       resenas30dRes,
       topPlantillasCompradasRes,
-      topPlantillasDocumentosRes
+      topPlantillasDocumentosRes,
+      abogadosEnVivoRes
     ] = await Promise.all([
       pool.query(`
         SELECT
@@ -146,6 +147,16 @@ const obtenerDashboardAdmin = async (req, res) => {
         GROUP BY p.id_plantilla, p.titulo, p.slug
         ORDER BY total_documentos DESC
         LIMIT 5
+      `),
+
+      pool.query(`
+        SELECT COUNT(*) AS total_abogados_en_vivo
+        FROM usuarios u
+        INNER JOIN abogados a ON a.id_usuario = u.id_usuario
+        WHERE u.deleted_at IS NULL
+          AND u.estatus_cuenta = 'activo'
+          AND u.ultimo_login IS NOT NULL
+          AND u.ultimo_login >= (NOW() - INTERVAL 10 MINUTE)
       `)
     ]);
 
@@ -163,6 +174,7 @@ const obtenerDashboardAdmin = async (req, res) => {
     const resenas30d = resenas30dRes[0][0] || {};
     const topPlantillasCompradas = topPlantillasCompradasRes[0] || [];
     const topPlantillasDocumentos = topPlantillasDocumentosRes[0] || [];
+    const abogadosEnVivo = abogadosEnVivoRes[0][0] || {};
 
     const totalAdmins = Number(
       usuariosPorRol.find((x) => String(x.rol_nombre).toLowerCase() === 'admin')?.total || 0
@@ -182,6 +194,7 @@ const obtenerDashboardAdmin = async (req, res) => {
         kpis: {
           total_admins: totalAdmins,
           total_abogados: totalAbogados,
+          total_abogados_en_vivo: Number(abogadosEnVivo.total_abogados_en_vivo || 0),
           total_clientes: totalClientes,
           total_plantillas: Number(plantillasResumen.total_plantillas || 0),
           total_bloques: Number(bloquesResumen.total_bloques || 0),

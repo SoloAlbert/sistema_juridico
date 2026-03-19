@@ -41,23 +41,25 @@ export default function LoginPage() {
       });
 
       if (data.user.role === 'cliente') {
-  navigate('/cliente');
-} else if (data.user.role === 'abogado') {
-  navigate('/abogado');
-} else if (data.user.role === 'admin') {
-  navigate('/admin');
-} else {
-  navigate('/');
-}
+        navigate('/cliente');
+      } else if (data.user.role === 'abogado') {
+        navigate('/abogado');
+      } else if (data.user.role === 'admin') {
+        navigate('/admin');
+      } else {
+        navigate('/');
+      }
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al iniciar sesión');
+      setError(err.response?.data?.message || 'Error al iniciar sesion');
     } finally {
       setLoading(false);
     }
   };
 
   return (
-    <Card title="Iniciar sesión" className="shadow-4">
+    <Card title="Iniciar sesion" className="auth-card shadow-4">
+      <p className="auth-card__lead">Ingresa a una plataforma legal con presencia, control y confianza.</p>
+
       <form onSubmit={handleSubmit} className="flex flex-column gap-3">
         <span className="p-float-label">
           <InputText
@@ -66,7 +68,7 @@ export default function LoginPage() {
             onChange={(e) => handleChange('email', e.target.value)}
             className="w-full"
           />
-          <label htmlFor="email">Correo electrónico</label>
+          <label htmlFor="email">Correo electronico</label>
         </span>
 
         <span className="p-float-label">
@@ -79,7 +81,7 @@ export default function LoginPage() {
             className="w-full"
             inputClassName="w-full"
           />
-          <label htmlFor="password">Contraseña</label>
+          <label htmlFor="password">Contrasena</label>
         </span>
 
         {error && <Message severity="error" text={error} />}
