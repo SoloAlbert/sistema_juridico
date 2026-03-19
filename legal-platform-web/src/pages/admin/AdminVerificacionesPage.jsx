@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import AdminMenu from '../../components/AdminMenu';
 import api from '../../api/axios';
+import { toAbsoluteUrl } from '../../config/runtime';
 
 import { Card } from 'primereact/card';
 import { Message } from 'primereact/message';
@@ -147,7 +148,7 @@ export default function AdminVerificacionesPage() {
 
                     <div className="flex gap-2 flex-wrap align-items-center">
                       {tagEstado(doc.estatus_revision)}
-                      <a href={`http://localhost:3000${doc.ruta_archivo}`} target="_blank" rel="noreferrer">
+                      <a href={toAbsoluteUrl(doc.ruta_archivo)} target="_blank" rel="noreferrer">
                         Ver archivo
                       </a>
                       <Button label="Aprobar" size="small" onClick={() => revisarDocumento(doc.id_documento_verificacion, 'aprobado')} />

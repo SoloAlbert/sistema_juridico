@@ -5,6 +5,7 @@ import ClienteMenu from '../../components/ClienteMenu';
 import AbogadoMenu from '../../components/AbogadoMenu';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../api/axios';
+import { toAbsoluteUrl } from '../../config/runtime';
 
 import { Card } from 'primereact/card';
 import { Message } from 'primereact/message';
@@ -139,7 +140,7 @@ export default function ConversacionDetallePage() {
                             {item.archivos.map((archivo) => (
                               <a
                                 key={archivo.id_mensaje_archivo}
-                                href={`http://localhost:3003${archivo.ruta_archivo}`}
+                                href={toAbsoluteUrl(archivo.ruta_archivo)}
                                 target="_blank"
                                 rel="noreferrer"
                                 className="text-primary no-underline"

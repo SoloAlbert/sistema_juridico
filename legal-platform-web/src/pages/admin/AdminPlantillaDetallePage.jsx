@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import AdminMenu from '../../components/AdminMenu';
 import api from '../../api/axios';
+import { API_BASE_URL, toAbsoluteUrl } from '../../config/runtime';
 
 import { Card } from 'primereact/card';
 import { Message } from 'primereact/message';
@@ -386,7 +387,7 @@ if (versionActual?.estructura_bloques_json) {
       const token = localStorage.getItem('token');
 
       const response = await fetch(
-        `http://localhost:3003/api/admin/plantillas/${id}/versiones/${idVersion}/upload-docx`,
+        `${API_BASE_URL}/admin/plantillas/${id}/versiones/${idVersion}/upload-docx`,
         {
           method: 'POST',
           headers: {
@@ -1089,7 +1090,7 @@ const actualizarBloqueEstructura = (index, field, value) => {
                       <div className="col-12 md:col-4 flex align-items-center">
                         {item.ruta_archivo_base ? (
                           <a
-                            href={`http://localhost:3003${item.ruta_archivo_base}`}
+                            href={toAbsoluteUrl(item.ruta_archivo_base)}
                             target="_blank"
                             rel="noreferrer"
                             className="text-primary"

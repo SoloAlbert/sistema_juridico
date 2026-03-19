@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import AbogadoMenu from '../../components/AbogadoMenu';
 import api from '../../api/axios';
+import { toAbsoluteUrl } from '../../config/runtime';
 
 import { Card } from 'primereact/card';
 import { Tag } from 'primereact/tag';
@@ -267,7 +268,7 @@ export default function DetalleCasoAbogadoPage() {
               ) : (
                 caso.archivos.map((item) => (
                   <div key={item.id_archivo} className="mb-3">
-                    <a href={`http://localhost:3003${item.ruta_archivo}`} target="_blank" rel="noreferrer" className="text-primary">
+                    <a href={toAbsoluteUrl(item.ruta_archivo)} target="_blank" rel="noreferrer" className="text-primary">
                       {item.nombre_archivo}
                     </a>
                   </div>

@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import AbogadoMenu from '../../components/AbogadoMenu';
 import api from '../../api/axios';
+import { API_BASE_URL, toAbsoluteUrl } from '../../config/runtime';
 
 import { Card } from 'primereact/card';
 import { Message } from 'primereact/message';
@@ -44,7 +45,7 @@ export default function MiVerificacionPage() {
 
       const token = localStorage.getItem('token');
 
-      const response = await fetch('http://localhost:3000/api/abogado/verificacion/mi-verificacion/documentos', {
+      const response = await fetch(`${API_BASE_URL}/abogado/verificacion/mi-verificacion/documentos`, {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`
@@ -165,7 +166,7 @@ export default function MiVerificacionPage() {
 
                         <div className="flex flex-column align-items-end gap-2">
                           {tagEstado(doc.estatus_revision)}
-                          <a href={`http://localhost:3000${doc.ruta_archivo}`} target="_blank" rel="noreferrer">
+                          <a href={toAbsoluteUrl(doc.ruta_archivo)} target="_blank" rel="noreferrer">
                             Ver archivo
                           </a>
                         </div>

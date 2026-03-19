@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import AbogadoMenu from '../../components/AbogadoMenu';
 import api from '../../api/axios';
+import { toAbsoluteUrl } from '../../config/runtime';
 
 import { Card } from 'primereact/card';
 import { DataTable } from 'primereact/datatable';
@@ -16,7 +17,7 @@ export default function MisDocumentosPage() {
   const [error, setError] = useState('');
 
   const descargarBody = (row) => {
-  const url = `http://localhost:3003${row.ruta_archivo_generado}`;
+  const url = toAbsoluteUrl(row.ruta_archivo_generado);
   return (
     <Button
       label="Descargar"

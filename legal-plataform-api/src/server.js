@@ -83,11 +83,12 @@ app.use('/api/abogado/verificacion', abogadoVerificacionRoutes);
 app.use('/api/admin/verificaciones', adminVerificacionesRoutes);
 app.use('/api/cliente/casos', clienteCasosRoutes);
 app.use('/api/notificaciones', notificacionesRoutes);
-app.use('/verificaciones_abogados',express.static(path.join(__dirname, '../storage/verificaciones_abogados')));
+app.use('/verificaciones_abogados', express.static(path.join(__dirname, '../storage/verificaciones_abogados')));
 
 const PORT = process.env.PORT || 3003;
+const HOST = process.env.HOST || '0.0.0.0';
 
-app.listen(PORT, async () => {
-  console.log(`🚀 Servidor corriendo en http://localhost:${PORT}`);
+app.listen(PORT, HOST, async () => {
+  console.log(`Servidor corriendo en http://${HOST}:${PORT}`);
   await testConnection();
 });

@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import AbogadoMenu from '../../components/AbogadoMenu';
 import api from '../../api/axios';
+import { toAbsoluteUrl } from '../../config/runtime';
 
 import { Card } from 'primereact/card';
 import { Message } from 'primereact/message';
@@ -319,7 +320,7 @@ export default function MiPerfilAbogadoPage() {
                 <div className="mb-3">
                   {metaPerfil.foto_perfil ? (
                     <img
-                      src={`http://localhost:3003${metaPerfil.foto_perfil}`}
+                      src={toAbsoluteUrl(metaPerfil.foto_perfil)}
                       alt="Foto de perfil"
                       style={{ width: '96px', height: '96px', objectFit: 'cover', borderRadius: '50%' }}
                     />

@@ -3,6 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import ClienteMenu from '../../components/ClienteMenu';
 import api from '../../api/axios';
+import { toAbsoluteUrl } from '../../config/runtime';
 
 import { Card } from 'primereact/card';
 import { Tag } from 'primereact/tag';
@@ -229,7 +230,7 @@ export default function DetalleCasoPage() {
                     </div>
 
                     <a
-                      href={`http://localhost:3003${item.ruta_archivo}`}
+                      href={toAbsoluteUrl(item.ruta_archivo)}
                       target="_blank"
                       rel="noreferrer"
                       className="text-primary"

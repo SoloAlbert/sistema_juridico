@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import ProtectedRoute from '../components/ProtectedRoute';
 import AuthLayout from '../layouts/AuthLayout';
+import { APP_BASE_PATH } from '../config/runtime';
 
 import HomePage from '../pages/shared/HomePage';
 import LoginPage from '../pages/auth/LoginPage';
@@ -58,7 +59,7 @@ import AdminVerificacionesPage from '../pages/admin/AdminVerificacionesPage';
 
 export default function AppRouter() {
   return (
-    <BrowserRouter>
+    <BrowserRouter basename={APP_BASE_PATH}>
       <Routes>
         <Route path="/" element={<HomePage />} />
         <Route path="/abogados" element={<DirectorioAbogadosPage />} />
