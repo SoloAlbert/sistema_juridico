@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import api from '../../api/axios';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import ClienteMenu from '../../components/ClienteMenu';
+import { useAuth } from '../../context/AuthContext';
 
 import { Card } from 'primereact/card';
 import { InputText } from 'primereact/inputtext';
@@ -13,6 +16,7 @@ import { Message } from 'primereact/message';
 
 export default function DirectorioAbogadosPage() {
   const navigate = useNavigate();
+  const { isAuthenticated, user } = useAuth();
 
   const [abogados, setAbogados] = useState([]);
   const [especialidades, setEspecialidades] = useState([]);
@@ -90,10 +94,7 @@ export default function DirectorioAbogadosPage() {
     }, 0);
   };
 
-  return (
-    <div className="min-h-screen surface-ground">
-      <Navbar />
-
+  const contenido = (
       <div className="p-4 md:p-6">
         <div className="mb-4">
           <h1 className="m-0">Directorio de abogados</h1>
@@ -180,6 +181,8 @@ export default function DirectorioAbogadosPage() {
                     <p className="m-0"><strong>Experiencia:</strong> {item.anos_experiencia} años</p>
                     <p className="m-0"><strong>Consulta:</strong> ${Number(item.precio_consulta_base || 0).toFixed(2)} {item.moneda}</p>
                     <p className="m-0"><strong>Ciudad:</strong> {item.ciudad || '-'}</p>
+                    <p className="m-0"><strong>Cumplimiento:</strong> {Number(item.reputacion_cumplimiento || 100).toFixed(0)}/100</p>
+                    <p className="m-0"><strong>Estatus operativo:</strong> {item.estatus_cumplimiento || 'normal'}</p>
                   </div>
 
                   <div className="flex align-items-center gap-2 mb-3">
@@ -199,6 +202,21 @@ export default function DirectorioAbogadosPage() {
           )}
         </div>
       </div>
+  );
+
+  if (isAuthenticated && user?.role === 'cliente') {
+    return (
+      <DashboardLayout>
+        <ClienteMenu />
+        {contenido}
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <div className="min-h-screen surface-ground">
+      <Navbar />
+      {contenido}
     </div>
   );
 }

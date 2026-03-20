@@ -1,27 +1,7 @@
-import { useNavigate } from 'react-router-dom';
-import { Button } from 'primereact/button';
 import { Card } from 'primereact/card';
 import Navbar from '../../components/Navbar';
-import { useAuth } from '../../context/AuthContext';
 
 export default function HomePage() {
-  const navigate = useNavigate();
-  const { isAuthenticated, user } = useAuth();
-
-  const panelPath = user?.role === 'abogado'
-    ? '/abogado'
-    : user?.role === 'cliente'
-      ? '/cliente'
-      : user?.role === 'admin'
-        ? '/admin'
-        : '/';
-
-  const panelLabel = user?.role === 'abogado'
-    ? 'Ir a panel abogado'
-    : user?.role === 'admin'
-      ? 'Ir a panel admin'
-      : 'Ir a panel cliente';
-
   return (
     <div className="public-scene">
       <Navbar />
@@ -39,30 +19,6 @@ export default function HomePage() {
               Conecta clientes con abogados verificados, compara perfiles con criterio y gestiona
               asuntos legales desde una plataforma que prioriza seguridad, claridad y seguimiento real.
             </p>
-
-            <div className="hero-legal__actions">
-              {isAuthenticated ? (
-                <Button
-                  label={panelLabel}
-                  icon="pi pi-arrow-right"
-                  onClick={() => navigate(panelPath)}
-                />
-              ) : (
-                <>
-                  <Button
-                    label="Iniciar sesion"
-                    icon="pi pi-sign-in"
-                    onClick={() => navigate('/login')}
-                  />
-                  <Button
-                    label="Crear cuenta"
-                    icon="pi pi-user-plus"
-                    outlined
-                    onClick={() => navigate('/register')}
-                  />
-                </>
-              )}
-            </div>
 
             <div className="hero-legal__trust">
               <span>Abogados con validacion profesional</span>
@@ -111,12 +67,6 @@ export default function HomePage() {
               Publica tu asunto, recibe postulaciones y contrata con más certeza gracias a perfiles
               verificados y seguimiento centralizado.
             </p>
-            <Button
-              label="Explorar directorio"
-              icon="pi pi-search"
-              outlined
-              onClick={() => navigate('/abogados')}
-            />
           </Card>
 
           <Card className="public-card public-card--feature">
@@ -125,12 +75,6 @@ export default function HomePage() {
               Muestra tu perfil profesional con mejor presencia, construye confianza y opera tus
               casos desde una plataforma diseñada para servicios legales.
             </p>
-            <Button
-              label="Crear cuenta"
-              icon="pi pi-user-plus"
-              outlined
-              onClick={() => navigate('/register')}
-            />
           </Card>
 
           <Card className="public-card public-card--statement">

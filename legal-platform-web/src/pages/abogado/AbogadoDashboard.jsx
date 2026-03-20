@@ -30,7 +30,8 @@ export default function AbogadoDashboard() {
     documentos_recientes: [],
     alertas: {
       casos_pendientes_pago: 0
-    }
+    },
+    cumplimiento: null
   });
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -53,6 +54,13 @@ export default function AbogadoDashboard() {
   };
 
   const formatoMoneda = (value) => `$${Number(value || 0).toFixed(2)}`;
+
+  const cumplimientoSeverity = (estatus) => {
+    if (estatus === 'bloqueado') return 'danger';
+    if (estatus === 'restringido') return 'danger';
+    if (estatus === 'observado') return 'warning';
+    return 'success';
+  };
 
   const tarjetaResumen = (titulo, valor, severity = 'info', onClick = null) => (
     <div className="col-12 md:col-6 lg:col-3">
@@ -103,6 +111,60 @@ export default function AbogadoDashboard() {
               text={`Tienes ${data.alertas.casos_pendientes_pago} caso(s) asignado(s) pendiente(s) de pago del cliente.`}
               className="w-full mb-4"
             />
+          )}
+
+          {data.cumplimiento && (
+            <Card title="Estado de cumplimiento" className="shadow-2 mb-4">
+              <div className="flex justify-content-between align-items-start gap-3 flex-wrap mb-3">
+                <div>
+                  <div className="text-600 text-sm mb-2">Estatus operativo</div>
+                  <div className="text-2xl font-semibold capitalize">{data.cumplimiento.estatus_cumplimiento}</div>
+                </div>
+                <Tag
+                  value={`Score ${Number(data.cumplimiento.reputacion_cumplimiento || 100).toFixed(0)}/100`}
+                  severity={cumplimientoSeverity(data.cumplimiento.estatus_cumplimiento)}
+                />
+              </div>
+
+              <p className="m-0 mb-3 text-700">{data.cumplimiento.motivo}</p>
+
+              <div className="grid">
+                <div className="col-12 md:col-3">
+                  <div className="surface-100 border-round p-3 h-full">
+                    <div className="text-600 text-sm mb-1">Alertas activas</div>
+                    <div className="text-2xl font-semibold">{data.cumplimiento.total_alertas_cumplimiento || 0}</div>
+                  </div>
+                </div>
+                <div className="col-12 md:col-3">
+                  <div className="surface-100 border-round p-3 h-full">
+                    <div className="text-600 text-sm mb-1">Disputas abiertas</div>
+                    <div className="text-2xl font-semibold">{data.cumplimiento.total_disputas_abiertas || 0}</div>
+                  </div>
+                </div>
+                <div className="col-12 md:col-3">
+                  <div className="surface-100 border-round p-3 h-full">
+                    <div className="text-600 text-sm mb-1">Alertas de evasion</div>
+                    <div className="text-2xl font-semibold">{data.cumplimiento.alertas_evasion_activas || 0}</div>
+                  </div>
+                </div>
+                <div className="col-12 md:col-3">
+                  <div className="surface-100 border-round p-3 h-full">
+                    <div className="text-600 text-sm mb-1">Nuevos casos</div>
+                    <div className="text-lg font-semibold">
+                      {data.cumplimiento.cumplimiento_habilitado_casos ? 'Habilitado' : 'Restringido'}
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {!data.cumplimiento.cumplimiento_habilitado_casos && (
+                <Message
+                  severity="warn"
+                  text="Mientras tu perfil este restringido o bloqueado no podras tomar nuevos casos. Resuelve tus alertas o disputas con administracion."
+                  className="w-full mt-3"
+                />
+              )}
+            </Card>
           )}
 
           <div className="grid">

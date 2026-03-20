@@ -2,6 +2,9 @@ import { useEffect, useState } from 'react';
 import { useParams } from 'react-router-dom';
 import Navbar from '../../components/Navbar';
 import api from '../../api/axios';
+import DashboardLayout from '../../layouts/DashboardLayout';
+import ClienteMenu from '../../components/ClienteMenu';
+import { useAuth } from '../../context/AuthContext';
 
 import { Card } from 'primereact/card';
 import { Tag } from 'primereact/tag';
@@ -12,6 +15,7 @@ import { Message } from 'primereact/message';
 
 export default function PerfilPublicoAbogadoPage() {
   const { id } = useParams();
+  const { isAuthenticated, user } = useAuth();
 
   const [abogado, setAbogado] = useState(null);
   const [resenas, setResenas] = useState([]);
@@ -64,10 +68,7 @@ export default function PerfilPublicoAbogadoPage() {
     }
   };
 
-  return (
-    <div className="public-scene">
-      <Navbar />
-
+  const contenido = (
       <main className="public-shell">
         {error && <Message severity="error" text={error} className="w-full mb-3" />}
 
@@ -127,24 +128,30 @@ export default function PerfilPublicoAbogadoPage() {
                     <span>Experiencia: {abogado.anos_experiencia} anos</span>
                     <span>Tiempo de respuesta: {formatearTiempoRespuesta(abogado.tiempo_respuesta_promedio_minutos)}</span>
                     <span>Consulta base: ${Number(abogado.precio_consulta_base || 0).toFixed(2)} {abogado.moneda}</span>
+                    <span>Cumplimiento: {Number(abogado.reputacion_cumplimiento || 100).toFixed(0)}/100</span>
+                    <span>Estatus operativo: {abogado.estatus_cumplimiento || 'normal'}</span>
                   </div>
 
                   <div className="lawyer-hero__cta">
-                    <Button
-                      label="Registrarme para contratar"
-                      icon="pi pi-user-plus"
-                      onClick={() => {
-                        window.location.href = '/register';
-                      }}
-                    />
-                    <Button
-                      label="Iniciar sesion"
-                      icon="pi pi-sign-in"
-                      outlined
-                      onClick={() => {
-                        window.location.href = '/login';
-                      }}
-                    />
+                    {!isAuthenticated && (
+                      <>
+                        <Button
+                          label="Registrarme para contratar"
+                          icon="pi pi-user-plus"
+                          onClick={() => {
+                            window.location.href = '/register';
+                          }}
+                        />
+                        <Button
+                          label="Iniciar sesion"
+                          icon="pi pi-sign-in"
+                          outlined
+                          onClick={() => {
+                            window.location.href = '/login';
+                          }}
+                        />
+                      </>
+                    )}
                   </div>
                 </Card>
               </div>
@@ -181,6 +188,8 @@ export default function PerfilPublicoAbogadoPage() {
                 <p><strong>Consulta gratuita:</strong> {abogado.consulta_gratuita ? 'Si' : 'No'}</p>
                 <p><strong>Acepta nuevos casos:</strong> {abogado.acepta_nuevos_casos ? 'Si' : 'No'}</p>
                 <p><strong>Disponibilidad activa:</strong> {abogado.disponibilidad_activa || 0} horarios</p>
+                <p><strong>Alertas activas:</strong> {abogado.total_alertas_cumplimiento || 0}</p>
+                <p><strong>Disputas abiertas:</strong> {abogado.total_disputas_abiertas || 0}</p>
 
                 {abogado.badge_verificado && (
                   <Message
@@ -232,6 +241,21 @@ export default function PerfilPublicoAbogadoPage() {
           </>
         ) : null}
       </main>
+  );
+
+  if (isAuthenticated && user?.role === 'cliente') {
+    return (
+      <DashboardLayout>
+        <ClienteMenu />
+        {contenido}
+      </DashboardLayout>
+    );
+  }
+
+  return (
+    <div className="public-scene">
+      <Navbar />
+      {contenido}
     </div>
   );
 }

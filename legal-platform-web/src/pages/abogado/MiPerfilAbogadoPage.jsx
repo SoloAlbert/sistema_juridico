@@ -57,6 +57,12 @@ export default function MiPerfilAbogadoPage() {
     telefono: '',
     foto_perfil: '',
     estatus_verificacion: 'pendiente',
+    reputacion_cumplimiento: 100,
+    estatus_cumplimiento: 'normal',
+    total_alertas_cumplimiento: 0,
+    total_disputas_abiertas: 0,
+    cumplimiento_habilitado_casos: true,
+    cumplimiento: null,
     rating_promedio: 0,
     total_resenas: 0,
     total_casos: 0,
@@ -130,6 +136,12 @@ export default function MiPerfilAbogadoPage() {
         telefono: p.telefono || '',
         foto_perfil: p.foto_perfil || '',
         estatus_verificacion: p.estatus_verificacion || 'pendiente',
+        reputacion_cumplimiento: Number(p.reputacion_cumplimiento || p.cumplimiento?.reputacion_cumplimiento || 100),
+        estatus_cumplimiento: p.estatus_cumplimiento || p.cumplimiento?.estatus_cumplimiento || 'normal',
+        total_alertas_cumplimiento: Number(p.total_alertas_cumplimiento || p.cumplimiento?.total_alertas_cumplimiento || 0),
+        total_disputas_abiertas: Number(p.total_disputas_abiertas || p.cumplimiento?.total_disputas_abiertas || 0),
+        cumplimiento_habilitado_casos: p.cumplimiento?.cumplimiento_habilitado_casos ?? !!p.cumplimiento_habilitado_casos,
+        cumplimiento: p.cumplimiento || null,
         rating_promedio: Number(p.rating_promedio || 0),
         total_resenas: Number(p.total_resenas || 0),
         total_casos: Number(p.total_casos || 0),
@@ -326,6 +338,13 @@ export default function MiPerfilAbogadoPage() {
     return 'warning';
   };
 
+  const cumplimientoSeverity = (estatus) => {
+    if (estatus === 'bloqueado') return 'danger';
+    if (estatus === 'restringido') return 'danger';
+    if (estatus === 'observado') return 'warning';
+    return 'success';
+  };
+
   const formatoMoneda = (valor) =>
     new Intl.NumberFormat('es-MX', {
       style: 'currency',
@@ -420,6 +439,33 @@ export default function MiPerfilAbogadoPage() {
                     severity={verificacionSeverity(metaPerfil.estatus_verificacion)}
                   />
                 </div>
+
+                <div className="mb-3">
+                  <Tag
+                    value={`Cumplimiento ${metaPerfil.estatus_cumplimiento || 'normal'}`}
+                    severity={cumplimientoSeverity(metaPerfil.estatus_cumplimiento)}
+                  />
+                </div>
+
+                {metaPerfil.cumplimiento && (
+                  <div className="surface-50 border-1 border-200 border-round p-3 mb-3">
+                    <p className="m-0 mb-2">
+                      <strong>Score:</strong> {Number(metaPerfil.reputacion_cumplimiento || 100).toFixed(0)}/100
+                    </p>
+                    <p className="m-0 mb-2">
+                      <strong>Alertas activas:</strong> {metaPerfil.total_alertas_cumplimiento}
+                    </p>
+                    <p className="m-0 mb-2">
+                      <strong>Disputas abiertas:</strong> {metaPerfil.total_disputas_abiertas}
+                    </p>
+                    <p className="m-0 mb-2">
+                      <strong>Nuevos casos:</strong> {metaPerfil.cumplimiento_habilitado_casos ? 'Habilitado' : 'Restringido'}
+                    </p>
+                    <p className="m-0 text-700">
+                      {metaPerfil.cumplimiento.motivo}
+                    </p>
+                  </div>
+                )}
 
                 <div className="surface-100 border-round p-3">
                   <p className="m-0 mb-2">

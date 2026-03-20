@@ -1,11 +1,127 @@
 const { pool } = require('../config/db');
 
+const construirMotivoCumplimiento = ({
+  estatusCumplimiento,
+  totalAlertas = 0,
+  totalDisputasAbiertas = 0,
+  alertasEvasion = 0,
+  alertasDisciplina = 0,
+  disputasGraves = 0
+}) => {
+  if (estatusCumplimiento === 'bloqueado') {
+    return 'Tu perfil fue bloqueado temporalmente para nuevos casos porque existen incidencias graves de cumplimiento que requieren revision administrativa.';
+  }
+
+  if (estatusCumplimiento === 'restringido') {
+    if (alertasEvasion > 0) {
+      return 'Tu perfil esta restringido para nuevos casos porque se detectaron alertas por intento de pago o contacto fuera de la plataforma.';
+    }
+
+    if (disputasGraves > 0) {
+      return 'Tu perfil esta restringido para nuevos casos porque tienes disputas activas por posible abandono o incumplimiento del servicio.';
+    }
+
+    return 'Tu perfil esta restringido temporalmente para nuevos casos mientras se resuelven incidencias de cumplimiento.';
+  }
+
+  if (estatusCumplimiento === 'observado') {
+    if (totalAlertas > 0 && totalDisputasAbiertas > 0) {
+      return 'Tu perfil esta en observacion porque existen alertas y disputas activas que deben resolverse dentro de la plataforma.';
+    }
+
+    if (totalAlertas > 0) {
+      return 'Tu perfil esta en observacion porque tienes alertas activas de cumplimiento. Evita pagos o acuerdos fuera de la plataforma.';
+    }
+
+    if (totalDisputasAbiertas > 0) {
+      return 'Tu perfil esta en observacion porque tienes disputas activas con clientes que aun no se resuelven.';
+    }
+  }
+
+  return 'Tu perfil de cumplimiento esta en orden. Puedes seguir tomando casos y trabajando dentro de la plataforma.';
+};
+
+const obtenerResumenCumplimiento = async (idAbogado) => {
+  const [rows] = await pool.query(
+    `SELECT
+      a.reputacion_cumplimiento,
+      a.estatus_cumplimiento,
+      a.total_alertas_cumplimiento,
+      a.total_disputas_abiertas,
+      a.cumplimiento_habilitado_casos,
+      (
+        SELECT COUNT(*)
+        FROM caso_cumplimiento_alertas cca
+        INNER JOIN usuarios urep ON urep.id_usuario = cca.id_usuario_reportado
+        WHERE urep.id_usuario = a.id_usuario
+          AND cca.estatus_alerta IN ('activa', 'confirmada')
+          AND cca.tipo_alerta IN ('pago_externo', 'contacto_externo')
+      ) AS alertas_evasion_activas,
+      (
+        SELECT COUNT(*)
+        FROM caso_cumplimiento_alertas cca
+        INNER JOIN usuarios urep ON urep.id_usuario = cca.id_usuario_reportado
+        WHERE urep.id_usuario = a.id_usuario
+          AND cca.estatus_alerta IN ('activa', 'confirmada')
+          AND cca.tipo_alerta IN ('advertencia', 'multa', 'bloqueo')
+      ) AS alertas_disciplina_activas,
+      (
+        SELECT COUNT(*)
+        FROM caso_disputas cd
+        INNER JOIN caso_contratos_servicio ccs ON ccs.id_contrato_servicio = cd.id_contrato_servicio
+        WHERE ccs.id_abogado = a.id_abogado
+          AND cd.estatus_disputa IN ('abierta', 'en_revision')
+          AND cd.tipo_disputa IN ('abandono_caso', 'incumplimiento')
+      ) AS disputas_graves_activas
+     FROM abogados a
+     WHERE a.id_abogado = ?
+     LIMIT 1`,
+    [idAbogado]
+  );
+
+  if (rows.length === 0) {
+    return null;
+  }
+
+  const cumplimiento = {
+    reputacion_cumplimiento: Number(rows[0].reputacion_cumplimiento || 100),
+    estatus_cumplimiento: rows[0].estatus_cumplimiento || 'normal',
+    total_alertas_cumplimiento: Number(rows[0].total_alertas_cumplimiento || 0),
+    total_disputas_abiertas: Number(rows[0].total_disputas_abiertas || 0),
+    cumplimiento_habilitado_casos: !!Number(rows[0].cumplimiento_habilitado_casos ?? 1),
+    alertas_evasion_activas: Number(rows[0].alertas_evasion_activas || 0),
+    alertas_disciplina_activas: Number(rows[0].alertas_disciplina_activas || 0),
+    disputas_graves_activas: Number(rows[0].disputas_graves_activas || 0)
+  };
+
+  cumplimiento.motivo = construirMotivoCumplimiento({
+    estatusCumplimiento: cumplimiento.estatus_cumplimiento,
+    totalAlertas: cumplimiento.total_alertas_cumplimiento,
+    totalDisputasAbiertas: cumplimiento.total_disputas_abiertas,
+    alertasEvasion: cumplimiento.alertas_evasion_activas,
+    alertasDisciplina: cumplimiento.alertas_disciplina_activas,
+    disputasGraves: cumplimiento.disputas_graves_activas
+  });
+
+  return cumplimiento;
+};
+
 const obtenerDashboardAbogado = async (req, res) => {
   try {
     const { id_usuario } = req.user;
 
     const [abogados] = await pool.query(
-      'SELECT id_abogado, total_ingresos FROM abogados WHERE id_usuario = ? LIMIT 1',
+      `SELECT
+        id_abogado,
+        total_ingresos,
+        reputacion_cumplimiento,
+        estatus_cumplimiento,
+        total_alertas_cumplimiento,
+        total_disputas_abiertas,
+        cumplimiento_habilitado_casos
+       FROM abogados
+       WHERE id_usuario = ?
+       LIMIT 1`,
       [id_usuario]
     );
 
@@ -18,6 +134,7 @@ const obtenerDashboardAbogado = async (req, res) => {
 
     const abogado = abogados[0];
     const id_abogado = abogado.id_abogado;
+    const cumplimiento = await obtenerResumenCumplimiento(id_abogado);
 
     const [casosNuevosRows] = await pool.query(
       `SELECT COUNT(DISTINCT c.id_caso) AS total
@@ -186,6 +303,7 @@ const obtenerDashboardAbogado = async (req, res) => {
           notificaciones_no_leidas: Number(notificacionesRows[0]?.total || 0),
           tareas_pendientes: tareasPendientes
         },
+        cumplimiento,
         casos_nuevos: casosNuevosDetalle,
         casos_asignados: casosAsignadosDetalle,
         proximas_reuniones: proximasReuniones,
@@ -228,6 +346,11 @@ const getMiPerfilAbogado = async (req, res) => {
         a.precio_consulta_base,
         a.moneda,
         a.estatus_verificacion,
+        a.reputacion_cumplimiento,
+        a.estatus_cumplimiento,
+        a.total_alertas_cumplimiento,
+        a.total_disputas_abiertas,
+        a.cumplimiento_habilitado_casos,
         a.acepta_nuevos_casos,
         a.rating_promedio,
         a.total_resenas,
@@ -257,6 +380,7 @@ const getMiPerfilAbogado = async (req, res) => {
     }
 
     const abogado = rows[0];
+    abogado.cumplimiento = await obtenerResumenCumplimiento(abogado.id_abogado);
 
     const [especialidades] = await pool.query(
       `SELECT
@@ -527,7 +651,9 @@ const listarAbogadosPublicos = async (req, res) => {
         a.precio_consulta_base,
         a.moneda,
         a.rating_promedio,
-        a.total_resenas
+        a.total_resenas,
+        a.reputacion_cumplimiento,
+        a.estatus_cumplimiento
       FROM abogados a
       INNER JOIN usuarios u ON u.id_usuario = a.id_usuario
       LEFT JOIN abogado_especialidad ae ON ae.id_abogado = a.id_abogado
@@ -535,6 +661,7 @@ const listarAbogadosPublicos = async (req, res) => {
       WHERE u.estatus_cuenta = 'activo'
         AND a.estatus_verificacion = 'verificado'
         AND a.acepta_nuevos_casos = 1
+        AND COALESCE(a.cumplimiento_habilitado_casos, 1) = 1
     `;
 
     const params = [];
@@ -554,7 +681,7 @@ const listarAbogadosPublicos = async (req, res) => {
       params.push(modalidad);
     }
 
-    sql += ` ORDER BY a.rating_promedio DESC, a.total_resenas DESC, a.id_abogado DESC`;
+    sql += ` ORDER BY COALESCE(a.reputacion_cumplimiento, 100) DESC, a.rating_promedio DESC, a.total_resenas DESC, a.id_abogado DESC`;
 
     const [rows] = await pool.query(sql, params);
 
@@ -602,6 +729,10 @@ const obtenerAbogadoPublicoPorId = async (req, res) => {
         a.total_resenas,
         a.total_casos,
         a.acepta_nuevos_casos,
+        a.reputacion_cumplimiento,
+        a.estatus_cumplimiento,
+        a.total_alertas_cumplimiento,
+        a.total_disputas_abiertas,
         (
           SELECT COUNT(*)
           FROM abogado_disponibilidad ad
@@ -633,6 +764,7 @@ const obtenerAbogadoPublicoPorId = async (req, res) => {
     abogado.badge_verificado = !!abogado.badge_verificado;
     abogado.cedula_verificada = !!abogado.cedula_verificada;
     abogado.estatus_verificacion = abogado.estatus_general || null;
+    abogado.reputacion_cumplimiento = Number(abogado.reputacion_cumplimiento || 100);
 
     const [especialidades] = await pool.query(
       `SELECT
