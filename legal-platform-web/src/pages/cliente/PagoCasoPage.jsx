@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useParams } from 'react-router-dom';
+import { useParams } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import ClienteMenu from '../../components/ClienteMenu';
 import api from '../../api/axios';
@@ -7,32 +7,17 @@ import api from '../../api/axios';
 import { Card } from 'primereact/card';
 import { Tag } from 'primereact/tag';
 import { Message } from 'primereact/message';
-import { Dropdown } from 'primereact/dropdown';
-import { InputText } from 'primereact/inputtext';
 import { Button } from 'primereact/button';
 import { Divider } from 'primereact/divider';
 
 export default function PagoCasoPage() {
   const { id } = useParams();
-  const navigate = useNavigate();
 
   const [resumen, setResumen] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingPago, setLoadingPago] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
-
-  const [form, setForm] = useState({
-    id_metodo_pago: 1,
-    referencia_externa: ''
-  });
-
-  const metodosPago = [
-    { label: 'Tarjeta', value: 1 },
-    { label: 'Transferencia', value: 2 },
-    { label: 'Mercado Pago', value: 3 },
-    { label: 'Stripe', value: 4 }
-  ];
 
   useEffect(() => {
     obtenerResumen();
@@ -52,13 +37,6 @@ export default function PagoCasoPage() {
     }
   };
 
-  const handleChange = (name, value) => {
-    setForm((prev) => ({
-      ...prev,
-      [name]: value
-    }));
-  };
-
   const pagarCaso = async (e) => {
     e.preventDefault();
     setError('');
@@ -66,20 +44,16 @@ export default function PagoCasoPage() {
     setLoadingPago(true);
 
     try {
-      const payload = {
-        id_metodo_pago: form.id_metodo_pago,
-        referencia_externa: form.referencia_externa || null
-      };
+      const { data } = await api.post(`/pagos/caso/${id}/pagar`);
+      const redirectUrl = data.data?.init_point || data.data?.sandbox_init_point;
 
-      const { data } = await api.post(`/pagos/caso/${id}/pagar`, payload);
+      if (!redirectUrl) {
+        throw new Error('No se recibio URL de pago de Mercado Pago');
+      }
 
-      setSuccess(data.message || 'Pago registrado correctamente');
-
-      setTimeout(() => {
-        navigate(`/cliente/mis-casos/${id}`);
-      }, 1200);
+      window.location.href = redirectUrl;
     } catch (err) {
-      setError(err.response?.data?.message || 'Error al registrar pago');
+      setError(err.response?.data?.message || err.message || 'Error al iniciar pago');
     } finally {
       setLoadingPago(false);
     }
@@ -115,7 +89,7 @@ export default function PagoCasoPage() {
             <Card title={`Pagar caso: ${resumen.folio_caso}`} className="shadow-2">
               <div className="grid">
                 <div className="col-12 md:col-6">
-                  <p><strong>Título:</strong> {resumen.titulo}</p>
+                  <p><strong>Titulo:</strong> {resumen.titulo}</p>
                   <p><strong>Estado del caso:</strong> <Tag value={resumen.estado} severity="info" /></p>
                   <p><strong>Estado del servicio:</strong> {estadoBody(resumen.estado_servicio)}</p>
                   <p><strong>Tipo de pago:</strong> Pago completo</p>
@@ -126,8 +100,8 @@ export default function PagoCasoPage() {
                   <p><strong>Abogado asignado:</strong> {nombreAbogado || '-'}</p>
                   <p><strong>Despacho:</strong> {resumen.nombre_despacho || 'Independiente'}</p>
                   <p><strong>Monto acordado:</strong> ${Number(resumen.monto_acordado || 0).toFixed(2)}</p>
-                  <p><strong>Comisión plataforma:</strong> {resumen.porcentaje_comision}%</p>
-                  <p><strong>Monto comisión:</strong> ${Number(resumen.monto_comision || 0).toFixed(2)}</p>
+                  <p><strong>Comision plataforma:</strong> {resumen.porcentaje_comision}%</p>
+                  <p><strong>Monto comision:</strong> ${Number(resumen.monto_comision || 0).toFixed(2)}</p>
                   <p><strong>Neto abogado:</strong> ${Number(resumen.monto_neto_abogado || 0).toFixed(2)}</p>
                 </div>
               </div>
@@ -135,30 +109,18 @@ export default function PagoCasoPage() {
               <Divider />
 
               <form onSubmit={pagarCaso} className="grid">
-                <div className="col-12 md:col-6">
-                  <label className="block mb-2">Método de pago</label>
-                  <Dropdown
-                    value={form.id_metodo_pago}
-                    options={metodosPago}
-                    onChange={(e) => handleChange('id_metodo_pago', e.value)}
-                    className="w-full"
-                  />
-                </div>
-
-                <div className="col-12 md:col-6">
-                  <label className="block mb-2">Referencia externa</label>
-                  <InputText
-                    value={form.referencia_externa}
-                    onChange={(e) => handleChange('referencia_externa', e.target.value)}
-                    className="w-full"
-                    placeholder="Ej. PAGO-CLIENTE-001"
+                <div className="col-12">
+                  <Message
+                    severity="info"
+                    text="El cobro se procesara en Mercado Pago. La plataforma retiene 10% y el 90% restante se asigna al abogado."
+                    className="w-full mb-3"
                   />
                 </div>
 
                 <div className="col-12">
                   <Button
                     type="submit"
-                    label={loadingPago ? 'Procesando...' : 'Confirmar pago'}
+                    label={loadingPago ? 'Redirigiendo...' : 'Pagar con Mercado Pago'}
                     icon="pi pi-credit-card"
                     loading={loadingPago}
                     disabled={resumen.estado_servicio !== 'pendiente_pago'}
@@ -171,7 +133,7 @@ export default function PagoCasoPage() {
           <div className="col-12 lg:col-5">
             <Card title="Resumen financiero" className="shadow-2">
               <p className="mb-3">Se maneja como pago completo: no hay anticipo separado ni saldo pendiente posterior.</p>
-              <p className="mb-3">Este pago se registrará en la plataforma y permitirá iniciar formalmente el caso.</p>
+              <p className="mb-3">El caso solo se marcara como pagado cuando Mercado Pago confirme la transaccion.</p>
 
               <div className="surface-100 p-3 border-round">
                 <div className="flex justify-content-between mb-2">
@@ -184,7 +146,7 @@ export default function PagoCasoPage() {
                 </div>
 
                 <div className="flex justify-content-between mb-2">
-                  <span>Comisión plataforma</span>
+                  <span>Comision plataforma</span>
                   <strong>${Number(resumen.monto_comision || 0).toFixed(2)}</strong>
                 </div>
 

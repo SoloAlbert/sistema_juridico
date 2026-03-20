@@ -47,10 +47,10 @@ export default function DetalleCasoPage() {
       setMensajeAsignacion('');
       setAsignandoId(postulacion.id_abogado);
 
-      const { data } = await api.post(`/casos/${id}/asignar-abogado`, {
+        const { data } = await api.post(`/casos/${id}/asignar-abogado`, {
         id_abogado: postulacion.id_abogado,
         monto_acordado: postulacion.monto_propuesto,
-        porcentaje_comision: 3
+        porcentaje_comision: 10
       });
 
       setMensajeAsignacion(data.message || 'Abogado asignado correctamente');

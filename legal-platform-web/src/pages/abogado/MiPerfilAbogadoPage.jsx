@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import DashboardLayout from '../../layouts/DashboardLayout';
 import AbogadoMenu from '../../components/AbogadoMenu';
 import api from '../../api/axios';
@@ -17,10 +18,13 @@ import { Tag } from 'primereact/tag';
 import { FileUpload } from 'primereact/fileupload';
 
 export default function MiPerfilAbogadoPage() {
+  const [searchParams, setSearchParams] = useSearchParams();
   const [loadingPerfil, setLoadingPerfil] = useState(true);
   const [loadingEspecialidades, setLoadingEspecialidades] = useState(true);
+  const [loadingMercadoPago, setLoadingMercadoPago] = useState(true);
   const [savingPerfil, setSavingPerfil] = useState(false);
   const [savingEspecialidades, setSavingEspecialidades] = useState(false);
+  const [loadingConexionMp, setLoadingConexionMp] = useState(false);
 
   const [error, setError] = useState('');
   const [success, setSuccess] = useState('');
@@ -61,6 +65,7 @@ export default function MiPerfilAbogadoPage() {
 
   const [catalogoEspecialidades, setCatalogoEspecialidades] = useState([]);
   const [especialidadesSeleccionadas, setEspecialidadesSeleccionadas] = useState([]);
+  const [mercadoPagoCuenta, setMercadoPagoCuenta] = useState(null);
 
   const modalidades = [
     { label: 'Presencial', value: 'presencial' },
@@ -72,8 +77,23 @@ export default function MiPerfilAbogadoPage() {
     cargarTodo();
   }, []);
 
+  useEffect(() => {
+    const mpStatus = searchParams.get('mp_connect');
+    if (!mpStatus) return;
+
+    if (mpStatus === 'success') {
+      setSuccess('Cuenta de Mercado Pago conectada correctamente');
+    } else {
+      setError('No fue posible completar la conexion con Mercado Pago');
+    }
+
+    const next = new URLSearchParams(searchParams);
+    next.delete('mp_connect');
+    setSearchParams(next, { replace: true });
+  }, [searchParams, setSearchParams]);
+
   const cargarTodo = async () => {
-    await Promise.all([obtenerPerfil(), obtenerCatalogoEspecialidades()]);
+    await Promise.all([obtenerPerfil(), obtenerCatalogoEspecialidades(), obtenerEstadoMercadoPago()]);
   };
 
   const obtenerPerfil = async () => {
@@ -269,6 +289,37 @@ export default function MiPerfilAbogadoPage() {
     }
   };
 
+  const conectarMercadoPago = async () => {
+    try {
+      setLoadingConexionMp(true);
+      const { data } = await api.get('/abogados/mercado-pago/connect-url');
+      const authUrl = data.data?.auth_url;
+
+      if (!authUrl) {
+        throw new Error('No se recibio URL de conexion');
+      }
+
+      window.location.href = authUrl;
+    } catch (err) {
+      setError(err.response?.data?.message || err.message || 'Error al iniciar conexion con Mercado Pago');
+    } finally {
+      setLoadingConexionMp(false);
+    }
+  };
+
+  const desconectarMercadoPago = async () => {
+    try {
+      setLoadingConexionMp(true);
+      await api.delete('/abogados/mercado-pago/conexion');
+      setSuccess('Cuenta de Mercado Pago desconectada');
+      await obtenerEstadoMercadoPago();
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al desconectar Mercado Pago');
+    } finally {
+      setLoadingConexionMp(false);
+    }
+  };
+
   const verificacionSeverity = (estatus) => {
     if (estatus === 'verificado') return 'success';
     if (estatus === 'rechazado') return 'danger';
@@ -300,6 +351,18 @@ export default function MiPerfilAbogadoPage() {
       await obtenerPerfil();
     } catch (err) {
       setError(err.response?.data?.message || 'Error al subir foto');
+    }
+  };
+
+  const obtenerEstadoMercadoPago = async () => {
+    try {
+      setLoadingMercadoPago(true);
+      const { data } = await api.get('/abogados/mi-cuenta-mercadopago');
+      setMercadoPagoCuenta(data.data || null);
+    } catch (err) {
+      setError(err.response?.data?.message || 'Error al cargar estado de Mercado Pago');
+    } finally {
+      setLoadingMercadoPago(false);
     }
   };
 
@@ -554,6 +617,54 @@ export default function MiPerfilAbogadoPage() {
                 />
               </div>
             </form>
+          </Card>
+
+          <Card title="Mercado Pago" className="shadow-2 mb-4">
+            {loadingMercadoPago ? (
+              <p>Cargando conexion...</p>
+            ) : (
+              <>
+                <p className="mb-2">
+                  <strong>Estado:</strong>{' '}
+                  <Tag
+                    value={mercadoPagoCuenta?.conectado ? 'Conectado' : 'No conectado'}
+                    severity={mercadoPagoCuenta?.conectado ? 'success' : 'warning'}
+                  />
+                </p>
+                <p className="mb-3">
+                  Esta conexion sera necesaria para split payments y cobros marketplace a nombre del abogado.
+                </p>
+                {mercadoPagoCuenta?.cuenta && (
+                  <>
+                    <p className="mb-1"><strong>Usuario MP:</strong> {mercadoPagoCuenta.cuenta.mp_user_id || '-'}</p>
+                    <p className="mb-1"><strong>Scope:</strong> {mercadoPagoCuenta.cuenta.scope || '-'}</p>
+                    <p className="mb-1"><strong>Modo:</strong> {mercadoPagoCuenta.cuenta.live_mode ? 'Produccion' : 'Pruebas'}</p>
+                    <p className="mb-3"><strong>Fecha conexion:</strong> {mercadoPagoCuenta.cuenta.fecha_conexion || '-'}</p>
+                  </>
+                )}
+
+                <div className="flex gap-2 flex-wrap">
+                  <Button
+                    type="button"
+                    label={mercadoPagoCuenta?.conectado ? 'Reconectar Mercado Pago' : 'Conectar Mercado Pago'}
+                    icon="pi pi-link"
+                    loading={loadingConexionMp}
+                    onClick={conectarMercadoPago}
+                  />
+                  {mercadoPagoCuenta?.conectado && (
+                    <Button
+                      type="button"
+                      label="Desconectar"
+                      icon="pi pi-times"
+                      severity="secondary"
+                      outlined
+                      loading={loadingConexionMp}
+                      onClick={desconectarMercadoPago}
+                    />
+                  )}
+                </div>
+              </>
+            )}
           </Card>
 
           <Card title="Mis especialidades" className="shadow-2">
