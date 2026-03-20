@@ -20,6 +20,7 @@ const adminTiposDocumentoRoutes = require('./routes/adminTiposDocumento.routes')
 const adminBitacoraRoutes = require('./routes/adminBitacora.routes');
 const adminPapeleraRoutes = require('./routes/adminPapelera.routes');
 const adminDashboardRoutes = require('./routes/adminDashboard.routes');
+const adminCumplimientoRoutes = require('./routes/adminCumplimiento.routes');
 const abogadoVerificacionRoutes = require('./routes/abogadoVerificacion.routes');
 const adminVerificacionesRoutes = require('./routes/adminVerificaciones.routes');
 const clienteCasosRoutes = require('./routes/clienteCasos.routes');
@@ -79,6 +80,7 @@ app.use('/api/admin/tipos-documento', adminTiposDocumentoRoutes);
 app.use('/api/admin/bitacora', adminBitacoraRoutes);
 app.use('/api/admin/papelera', adminPapeleraRoutes);
 app.use('/api/admin/dashboard', adminDashboardRoutes);
+app.use('/api/admin/cumplimiento', adminCumplimientoRoutes);
 app.use('/api/abogado/verificacion', abogadoVerificacionRoutes);
 app.use('/api/admin/verificaciones', adminVerificacionesRoutes);
 app.use('/api/cliente/casos', clienteCasosRoutes);

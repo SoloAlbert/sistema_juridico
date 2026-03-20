@@ -24,6 +24,8 @@ const asegurarAbogadoVerificadoParaLitigar = async (id_usuario, connection = poo
     `SELECT
       a.id_abogado,
       a.estatus_verificacion,
+      COALESCE(a.estatus_cumplimiento, 'normal') AS estatus_cumplimiento,
+      COALESCE(a.cumplimiento_habilitado_casos, 1) AS cumplimiento_habilitado_casos,
       COALESCE(av.badge_verificado, 0) AS badge_verificado
      FROM abogados a
      LEFT JOIN abogado_verificaciones av ON av.id_abogado = a.id_abogado
@@ -41,13 +43,17 @@ const asegurarAbogadoVerificadoParaLitigar = async (id_usuario, connection = poo
   }
 
   const abogado = rows[0];
-  const permitido = abogado.estatus_verificacion === 'verificado' && Number(abogado.badge_verificado) === 1;
+  const permitido = abogado.estatus_verificacion === 'verificado'
+    && Number(abogado.badge_verificado) === 1
+    && Number(abogado.cumplimiento_habilitado_casos) === 1;
 
   if (!permitido) {
     return {
       ok: false,
       status: 403,
-      message: 'Para ver y tomar casos primero verifica que eres un abogado autentico. Completa tu verificacion profesional.'
+      message: abogado.estatus_cumplimiento && abogado.estatus_cumplimiento !== 'normal'
+        ? 'Tu perfil tiene restricciones de cumplimiento y no puede tomar nuevos casos hasta revision administrativa.'
+        : 'Para ver y tomar casos primero verifica que eres un abogado autentico. Completa tu verificacion profesional.'
     };
   }
 

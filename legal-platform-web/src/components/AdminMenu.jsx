@@ -36,7 +36,12 @@ export default function AdminMenu() {
       command: () => navigate('/admin/verificaciones')
     },
     {
-      label: 'Bitácora',
+      label: 'Cumplimiento',
+      icon: 'pi pi-shield',
+      command: () => navigate('/admin/cumplimiento')
+    },
+    {
+      label: 'Bitacora',
       icon: 'pi pi-history',
       command: () => navigate('/admin/bitacora')
     },

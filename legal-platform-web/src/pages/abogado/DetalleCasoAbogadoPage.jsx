@@ -11,6 +11,7 @@ import { Button } from 'primereact/button';
 import { Divider } from 'primereact/divider';
 import { Message } from 'primereact/message';
 import { InputTextarea } from 'primereact/inputtextarea';
+import CasoWorkflowPanel from '../../components/CasoWorkflowPanel';
 
 export default function DetalleCasoAbogadoPage() {
   const { id } = useParams();
@@ -173,6 +174,8 @@ export default function DetalleCasoAbogadoPage() {
                 />
               </div>
             </Card>
+
+            <CasoWorkflowPanel caseId={id} role="abogado" />
 
             <Card title="Cliente" className="shadow-2 mb-4">
               <p><strong>Nombre:</strong> {caso.cliente_nombre} {caso.cliente_apellido_paterno || ''} {caso.cliente_apellido_materno || ''}</p>

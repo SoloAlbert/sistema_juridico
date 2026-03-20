@@ -15,6 +15,17 @@ const {
   solicitarDocumentosCasoAbogado,
   agregarNotaPrivadaCasoAbogado
 } = require('../controllers/casos.controller');
+const {
+  obtenerWorkflow,
+  guardarContrato,
+  firmarContrato,
+  crearHito,
+  actualizarAvanceHito,
+  aprobarHito,
+  observarHito,
+  crearDisputa,
+  crearAlertaCumplimiento
+} = require('../controllers/casoWorkflow.controller');
 
 const { validarJWT, soloCliente, soloAbogado } = require('../middlewares/auth.middleware');
 
@@ -23,6 +34,15 @@ router.post('/', validarJWT, soloCliente, crearCaso);
 router.get('/mis-casos', validarJWT, soloCliente, listarMisCasosCliente);
 router.get('/mis-casos/:id', validarJWT, soloCliente, obtenerMiCasoCliente);
 router.post('/:id/asignar-abogado', validarJWT, soloCliente, asignarAbogadoACaso);
+router.get('/:id/workflow', validarJWT, obtenerWorkflow);
+router.post('/:id/workflow/contrato', validarJWT, guardarContrato);
+router.post('/:id/workflow/firmar', validarJWT, firmarContrato);
+router.post('/:id/workflow/hitos', validarJWT, crearHito);
+router.patch('/:id/workflow/hitos/:idHito/avance', validarJWT, soloAbogado, actualizarAvanceHito);
+router.patch('/:id/workflow/hitos/:idHito/aprobar', validarJWT, soloCliente, aprobarHito);
+router.patch('/:id/workflow/hitos/:idHito/observar', validarJWT, soloCliente, observarHito);
+router.post('/:id/workflow/disputas', validarJWT, crearDisputa);
+router.post('/:id/workflow/alertas-cumplimiento', validarJWT, crearAlertaCumplimiento);
 
 /* ABOGADO */
 router.get('/abogado/mis-casos', validarJWT, soloAbogado, listarMisCasosAbogado);

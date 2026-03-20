@@ -56,6 +56,7 @@ import AdminBitacoraPage from '../pages/admin/AdminBitacoraPage';
 
 import AdminPapeleraPage from '../pages/admin/AdminPapeleraPage';
 import AdminVerificacionesPage from '../pages/admin/AdminVerificacionesPage';
+import AdminCumplimientoPage from '../pages/admin/AdminCumplimientoPage';
 
 export default function AppRouter() {
   return (
@@ -438,6 +439,15 @@ export default function AppRouter() {
   element={
     <ProtectedRoute role="admin">
       <AdminVerificacionesPage />
+    </ProtectedRoute>
+  }
+/>
+
+<Route
+  path="/admin/cumplimiento"
+  element={
+    <ProtectedRoute role="admin">
+      <AdminCumplimientoPage />
     </ProtectedRoute>
   }
 />

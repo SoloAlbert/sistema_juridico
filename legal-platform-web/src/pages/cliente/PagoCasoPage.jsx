@@ -9,6 +9,7 @@ import { Tag } from 'primereact/tag';
 import { Message } from 'primereact/message';
 import { Button } from 'primereact/button';
 import { Divider } from 'primereact/divider';
+import CasoWorkflowPanel from '../../components/CasoWorkflowPanel';
 
 export default function PagoCasoPage() {
   const { id } = useParams();
@@ -132,7 +133,7 @@ export default function PagoCasoPage() {
 
           <div className="col-12 lg:col-5">
             <Card title="Resumen financiero" className="shadow-2">
-              <p className="mb-3">Se maneja como pago completo: no hay anticipo separado ni saldo pendiente posterior.</p>
+              <p className="mb-3">El pago entra retenido a la plataforma y su liberacion al abogado se administra por hitos aprobados dentro del workflow del caso.</p>
               <p className="mb-3">El caso solo se marcara como pagado cuando Mercado Pago confirme la transaccion.</p>
 
               <div className="surface-100 p-3 border-round">
@@ -160,6 +161,10 @@ export default function PagoCasoPage() {
                 </div>
               </div>
             </Card>
+          </div>
+
+          <div className="col-12">
+            <CasoWorkflowPanel caseId={id} role="cliente" compact />
           </div>
         </div>
       ) : null}

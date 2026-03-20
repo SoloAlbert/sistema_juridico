@@ -124,7 +124,7 @@ async function registrarPagoAprobado(connection, asignacion, referenciaExterna) 
       estatus_pago,
       fecha_pago
     )
-    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'MXN', 'pagado', NOW())`,
+    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, 'MXN', 'retenido', NOW())`,
     [
       asignacion.id_caso,
       asignacion.id_asignacion,
@@ -188,7 +188,7 @@ async function registrarPagoAprobado(connection, asignacion, referenciaExterna) 
 
   await connection.query(
     `UPDATE caso_asignaciones
-     SET estado_servicio = 'pagado',
+     SET estado_servicio = 'retenido',
          updated_at = CURRENT_TIMESTAMP
      WHERE id_asignacion = ?`,
     [asignacion.id_asignacion]
@@ -200,13 +200,6 @@ async function registrarPagoAprobado(connection, asignacion, referenciaExterna) 
          updated_at = CURRENT_TIMESTAMP
      WHERE id_caso = ?`,
     [asignacion.id_caso]
-  );
-
-  await connection.query(
-    `UPDATE abogados
-     SET total_ingresos = total_ingresos + ?
-     WHERE id_abogado = ?`,
-    [asignacion.monto_neto_abogado, asignacion.id_abogado]
   );
 
   const [existeConversacion] = await connection.query(
@@ -227,8 +220,8 @@ async function registrarPagoAprobado(connection, asignacion, referenciaExterna) 
     await crearNotificacion({
       id_usuario: asignacion.id_usuario_abogado,
       tipo_notificacion: 'pago',
-      titulo: 'Pago recibido',
-      mensaje: `Recibiste un pago por ${asignacion.monto_neto_abogado} MXN en el caso #${asignacion.id_caso}.`,
+      titulo: 'Pago recibido y retenido',
+      mensaje: `El cliente pago el caso #${asignacion.id_caso}. Tu monto quedo retenido y se liberara por hitos aprobados.`,
       connection
     });
   }
@@ -610,10 +603,10 @@ const listarMisPagosCliente = async (req, res) => {
 
     const [rows] = await pool.query(
       `SELECT
-        p.id_pago,
-        p.id_caso,
-        c.folio_caso,
-        c.titulo,
+         p.id_pago,
+         p.id_caso,
+         c.folio_caso,
+         c.titulo,
         p.monto_bruto,
         p.porcentaje_comision,
         p.monto_comision,
@@ -669,28 +662,45 @@ const listarMisIngresosAbogado = async (req, res) => {
         c.titulo,
         p.monto_bruto,
         p.porcentaje_comision,
-        p.monto_comision,
-        p.monto_neto_abogado,
-        p.moneda,
-        p.estatus_pago,
-        p.fecha_pago
-      FROM pagos p
-      INNER JOIN casos c ON c.id_caso = p.id_caso
-      WHERE p.id_abogado = ?
-      ORDER BY p.id_pago DESC`,
+         p.monto_comision,
+         p.monto_neto_abogado,
+         IFNULL(rel.total_liberado, 0) AS monto_liberado,
+         p.moneda,
+         p.estatus_pago,
+         p.fecha_pago
+       FROM pagos p
+       INNER JOIN casos c ON c.id_caso = p.id_caso
+       LEFT JOIN (
+         SELECT
+           clp.id_pago,
+           SUM(clp.monto_liberado) AS total_liberado
+         FROM caso_liberaciones_pago clp
+         WHERE clp.estatus_liberacion IN ('aprobada', 'ejecutada')
+         GROUP BY clp.id_pago
+       ) rel ON rel.id_pago = p.id_pago
+       WHERE p.id_abogado = ?
+       ORDER BY p.id_pago DESC`,
       [id_abogado]
     );
 
     const [resumen] = await pool.query(
       `SELECT
         COUNT(*) AS total_pagos,
-        IFNULL(SUM(CASE WHEN estatus_pago = 'pagado' THEN monto_bruto ELSE 0 END), 0) AS total_facturado,
-        IFNULL(SUM(CASE WHEN estatus_pago = 'pagado' THEN monto_comision ELSE 0 END), 0) AS total_comisiones,
-        IFNULL(SUM(CASE WHEN estatus_pago = 'pagado' THEN monto_neto_abogado ELSE 0 END), 0) AS total_neto,
-        IFNULL(SUM(CASE WHEN estatus_pago IN ('pendiente', 'retenido') THEN monto_neto_abogado ELSE 0 END), 0) AS saldo_pendiente,
-        IFNULL(SUM(CASE WHEN estatus_pago = 'retenido' THEN monto_neto_abogado ELSE 0 END), 0) AS total_retenido
-      FROM pagos
-      WHERE id_abogado = ?`,
+        IFNULL(SUM(CASE WHEN p.estatus_pago IN ('retenido', 'pagado') THEN p.monto_bruto ELSE 0 END), 0) AS total_facturado,
+        IFNULL(SUM(CASE WHEN p.estatus_pago IN ('retenido', 'pagado') THEN p.monto_comision ELSE 0 END), 0) AS total_comisiones,
+        IFNULL(SUM(IFNULL(rel.total_liberado, 0)), 0) AS total_neto,
+        IFNULL(SUM(GREATEST(p.monto_neto_abogado - IFNULL(rel.total_liberado, 0), 0)), 0) AS saldo_pendiente,
+        IFNULL(SUM(CASE WHEN p.estatus_pago = 'retenido' THEN GREATEST(p.monto_neto_abogado - IFNULL(rel.total_liberado, 0), 0) ELSE 0 END), 0) AS total_retenido
+      FROM pagos p
+      LEFT JOIN (
+        SELECT
+          clp.id_pago,
+          SUM(clp.monto_liberado) AS total_liberado
+        FROM caso_liberaciones_pago clp
+        WHERE clp.estatus_liberacion IN ('aprobada', 'ejecutada')
+        GROUP BY clp.id_pago
+      ) rel ON rel.id_pago = p.id_pago
+      WHERE p.id_abogado = ?`,
       [id_abogado]
     );
 

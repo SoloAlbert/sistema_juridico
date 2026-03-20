@@ -150,6 +150,7 @@ export default function IngresosAbogadoPage() {
           <Column field="monto_bruto" header="Monto bruto" body={(row) => formatoMoneda(row.monto_bruto)} />
           <Column field="monto_comision" header="Comision" body={(row) => formatoMoneda(row.monto_comision)} />
           <Column field="monto_neto_abogado" header="Neto" body={(row) => formatoMoneda(row.monto_neto_abogado)} />
+          <Column field="monto_liberado" header="Liberado" body={(row) => formatoMoneda(row.monto_liberado)} />
           <Column field="porcentaje_comision" header="% comision" body={(row) => `${Number(row.porcentaje_comision || 0)}%`} />
           <Column field="fecha_pago" header="Fecha pago" body={(row) => formatoFecha(row.fecha_pago)} />
           <Column header="Estado" body={estadoBody} />

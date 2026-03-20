@@ -169,6 +169,53 @@ const completarCaso = async (req, res) => {
       });
     }
 
+    try {
+      const [contratos] = await connection.query(
+        `SELECT id_contrato_servicio, estatus_contrato
+         FROM caso_contratos_servicio
+         WHERE id_caso = ?
+         LIMIT 1`,
+        [id]
+      );
+
+      if (contratos.length > 0) {
+        const contrato = contratos[0];
+        const [pendientes] = await connection.query(
+          `SELECT COUNT(*) AS total
+           FROM caso_hitos_trabajo
+           WHERE id_contrato_servicio = ?
+             AND estatus_hito NOT IN ('liberado', 'cancelado')`,
+          [contrato.id_contrato_servicio]
+        );
+
+        const [disputas] = await connection.query(
+          `SELECT COUNT(*) AS total
+           FROM caso_disputas
+           WHERE id_contrato_servicio = ?
+             AND estatus_disputa IN ('abierta', 'en_revision')`,
+          [contrato.id_contrato_servicio]
+        );
+
+        if (Number(pendientes[0]?.total || 0) > 0) {
+          return res.status(400).json({
+            ok: false,
+            message: 'No puedes cerrar el caso mientras existan hitos pendientes o sin liberar'
+          });
+        }
+
+        if (Number(disputas[0]?.total || 0) > 0) {
+          return res.status(400).json({
+            ok: false,
+            message: 'No puedes cerrar el caso mientras exista una disputa abierta'
+          });
+        }
+      }
+    } catch (workflowError) {
+      if (workflowError.code !== 'ER_NO_SUCH_TABLE') {
+        throw workflowError;
+      }
+    }
+
     await connection.beginTransaction();
 
     await connection.query(

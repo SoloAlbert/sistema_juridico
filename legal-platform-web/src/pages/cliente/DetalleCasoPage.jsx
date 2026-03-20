@@ -10,6 +10,7 @@ import { Tag } from 'primereact/tag';
 import { Divider } from 'primereact/divider';
 import { Button } from 'primereact/button';
 import { Message } from 'primereact/message';
+import CasoWorkflowPanel from '../../components/CasoWorkflowPanel';
 
 export default function DetalleCasoPage() {
   const { id } = useParams();
@@ -144,6 +145,10 @@ export default function DetalleCasoPage() {
               )}
             </div>
           </Card>
+
+          {['asignado', 'en_proceso', 'finalizado'].includes(caso.estado) && (
+            <CasoWorkflowPanel caseId={id} role="cliente" />
+          )}
 
           <Card title="Seguimiento del caso" className="shadow-2 mb-4">
             <div className="grid">
